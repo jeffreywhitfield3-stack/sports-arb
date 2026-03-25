@@ -27,6 +27,152 @@ def health():
     return jsonify({"status": "healthy"}), 200
 
 
+@app.route("/success", methods=["GET"])
+def success():
+    """Success page after Stripe checkout completion."""
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Welcome to Premium - Sports Arb Alerts</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .container {
+                background: white;
+                border-radius: 20px;
+                padding: 50px 40px;
+                max-width: 500px;
+                text-align: center;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
+            .icon { font-size: 80px; margin-bottom: 20px; }
+            h1 { color: #2d3748; font-size: 32px; margin-bottom: 15px; }
+            p { color: #718096; font-size: 18px; line-height: 1.6; margin-bottom: 15px; }
+            .highlight {
+                background: #f7fafc;
+                border-left: 4px solid #48bb78;
+                padding: 20px;
+                margin: 25px 0;
+                border-radius: 8px;
+                text-align: left;
+            }
+            .highlight h3 { color: #2d3748; font-size: 16px; margin-bottom: 10px; }
+            .highlight ul { list-style: none; padding-left: 0; }
+            .highlight li { color: #4a5568; margin: 8px 0; padding-left: 25px; position: relative; }
+            .highlight li:before { content: "✓"; position: absolute; left: 0; color: #48bb78; font-weight: bold; }
+            .footer { margin-top: 30px; color: #a0aec0; font-size: 14px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="icon">🎉</div>
+            <h1>Welcome to Premium!</h1>
+            <p>Your subscription is now active. You'll receive premium access shortly.</p>
+
+            <div class="highlight">
+                <h3>What's Next?</h3>
+                <ul>
+                    <li>Check your Discord DMs for the premium role</li>
+                    <li>Check your Telegram for the premium channel invite</li>
+                    <li>You'll now receive spreads and totals alerts</li>
+                    <li>All moneyline (h2h) alerts included</li>
+                </ul>
+            </div>
+
+            <p style="margin-top: 25px;">Premium alerts are sent every 10 minutes when opportunities are found.</p>
+
+            <div class="footer">
+                Questions? Contact us in Discord or Telegram
+            </div>
+        </div>
+    </body>
+    </html>
+    """, 200
+
+
+@app.route("/cancel", methods=["GET"])
+def cancel():
+    """Cancel page when user cancels Stripe checkout."""
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Checkout Canceled - Sports Arb Alerts</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .container {
+                background: white;
+                border-radius: 20px;
+                padding: 50px 40px;
+                max-width: 500px;
+                text-align: center;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
+            .icon { font-size: 80px; margin-bottom: 20px; }
+            h1 { color: #2d3748; font-size: 32px; margin-bottom: 15px; }
+            p { color: #718096; font-size: 18px; line-height: 1.6; margin-bottom: 15px; }
+            .box {
+                background: #f7fafc;
+                border-radius: 12px;
+                padding: 25px;
+                margin: 25px 0;
+            }
+            .box h3 { color: #2d3748; font-size: 18px; margin-bottom: 15px; }
+            .box p { color: #4a5568; font-size: 16px; }
+            code {
+                background: #edf2f7;
+                padding: 3px 8px;
+                border-radius: 4px;
+                font-family: 'Courier New', monospace;
+                color: #e53e3e;
+            }
+            .footer { margin-top: 30px; color: #a0aec0; font-size: 14px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="icon">💭</div>
+            <h1>Checkout Canceled</h1>
+            <p>No worries! You can subscribe anytime.</p>
+
+            <div class="box">
+                <h3>How to Subscribe</h3>
+                <p>Use the <code>/subscribe</code> command in Discord or Telegram whenever you're ready.</p>
+            </div>
+
+            <p style="margin-top: 25px;">You'll continue to receive free moneyline (h2h) alerts in the free channel.</p>
+
+            <div class="footer">
+                Questions? Ask in Discord or Telegram
+            </div>
+        </div>
+    </body>
+    </html>
+    """, 200
+
+
 @app.route("/webhook", methods=["POST"])
 def stripe_webhook():
     """

@@ -10,8 +10,6 @@ services:
     env_file:
       - .env
     volumes:
-      # Persist SQLite database across container restarts
-      - ./data:/app/data
       # Persist logs
       - ./logs:/app/logs
     healthcheck:

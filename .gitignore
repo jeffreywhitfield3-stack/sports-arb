@@ -31,11 +31,7 @@ ENV/
 env/
 .venv
 
-# SQLite databases
-*.db
-*.sqlite
-*.sqlite3
-data/*.db
+# Database (now using Supabase - no local DB files)
 
 # Logs
 logs/

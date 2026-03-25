@@ -30,14 +30,12 @@ sports_arb/
 ├── requirements.txt
 ├── .env.example             # Copy to .env and fill in keys
 ├── logs/                    # Auto-created log files
-├── data/                    # SQLite database for subscriptions
-│   └── subscriptions.db
 └── src/
     ├── odds_fetcher.py      # Pulls odds from The Odds API
     ├── arb_calculator.py    # Detects arbs & calculates stakes
     ├── discord_alerter.py   # Discord alerts + slash commands
     ├── telegram_alerter.py  # Telegram alerts + command handlers
-    ├── billing.py           # SQLite subscription management
+    ├── billing.py           # Supabase subscription management
     └── logger_setup.py      # Configures file + console logging
 ```
 
@@ -102,6 +100,73 @@ python main.py
    - Add the bot as an **Administrator** to both channels
 4. To get channel IDs: forward a message from each channel to [@userinfobot](https://t.me/userinfobot). The IDs will be negative numbers like `-1001234567890`. Add as `TELEGRAM_FREE_CHANNEL_ID` and `TELEGRAM_PREMIUM_CHANNEL_ID`.
 5. Create an invite link for the premium channel (Channel Settings → Invite Link). Add as `TELEGRAM_PREMIUM_INVITE_LINK`.
+
+---
+
+## Supabase Setup (Database)
+
+Before setting up Stripe, you need to create a Supabase database for subscription tracking.
+
+### 1. Create Supabase Project
+
+1. Go to [supabase.com](https://supabase.com) and sign up/login
+2. Click **New Project**
+3. Fill in:
+   - **Name**: sports-arb (or your choice)
+   - **Database Password**: Strong password (save this!)
+   - **Region**: Choose closest to your deployment
+4. Click **Create new project** (takes ~2 minutes)
+
+### 2. Create Subscriptions Table
+
+1. In your Supabase project → **SQL Editor** → **New Query**
+2. Paste and run this SQL:
+
+```sql
+-- Create subscriptions table
+CREATE TABLE subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    stripe_customer_id TEXT,
+    stripe_subscription_id TEXT,
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, platform)
+);
+
+-- Create indexes for better query performance
+CREATE INDEX idx_customer ON subscriptions(stripe_customer_id);
+CREATE INDEX idx_active ON subscriptions(active, platform);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- Create policy to allow service role access (for your backend)
+CREATE POLICY "Enable all access for service role"
+ON subscriptions
+FOR ALL
+TO service_role
+USING (true)
+WITH CHECK (true);
+```
+
+3. Click **Run** to execute
+
+### 3. Get API Credentials
+
+1. In Supabase project → **Settings** → **API**
+2. Copy the following values:
+   - **Project URL**: `https://xxxxx.supabase.co`
+   - **anon public key**: `eyJhbGci...` (long string)
+3. Add to `.env`:
+   ```
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=eyJhbGci...
+   ```
+
+**⚠️ Important**: Use the **anon/public** key (not the service_role key) for client-side access. The service_role key should only be used server-side if needed.
 
 ---
 
@@ -304,6 +369,8 @@ Our architecture runs everything in one process, so you only need **one service*
    - Add all your `.env` keys (click **Raw Editor** and paste):
      ```
      ODDS_API_KEY=your_key_here
+     SUPABASE_URL=https://your-project.supabase.co
+     SUPABASE_ANON_KEY=your_supabase_anon_key
      DISCORD_BOT_TOKEN=your_token
      DISCORD_GUILD_ID=your_guild_id
      DISCORD_FREE_CHANNEL_ID=your_free_channel
@@ -397,10 +464,11 @@ Our architecture runs everything in one process, so you only need **one service*
 
 ### Important Deployment Notes
 
-1. **Database persistence:**
-   - Railway/Render: The SQLite database is stored in ephemeral storage and will reset on redeploys
-   - For production, consider mounting a persistent volume or using PostgreSQL
-   - Add to Railway: **Volumes** → Mount `/app/data` to persist `subscriptions.db`
+1. **Database (Supabase):**
+   - Supabase is a hosted PostgreSQL database, so data persists across deployments
+   - No need for volume mounting or local database files
+   - Free tier includes 500MB database storage and 2GB bandwidth
+   - Production-ready with automatic backups
 
 2. **Webhook HTTPS requirement:**
    - Stripe requires HTTPS for production webhooks

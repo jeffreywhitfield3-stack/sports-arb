@@ -37,7 +37,7 @@ MARKET_LABELS = {
 def build_message(arb: ArbOpportunity) -> str:
     market_label = MARKET_LABELS.get(arb.market, arb.market.upper())
     lines = [
-        f"{arb.emoji} *ARB ALERT — {arb.margin_pct:.2f}% Margin*",
+        f"{arb.emoji} *ARB ALERT — {escape(f'{arb.margin_pct:.2f}')}% Margin*",
         f"🏟 *{escape(arb.game)}*",
         f"📋 {escape(arb.sport)} · {escape(market_label)}",
         "",
@@ -45,20 +45,26 @@ def build_message(arb: ArbOpportunity) -> str:
 
     for i, leg in enumerate(arb.legs, 1):
         odds_str = f"+{leg['odds']}" if leg['odds'] > 0 else str(leg['odds'])
+        implied_pct_str = escape(f"{leg['implied_pct']}")
+        stake_str = escape(f"${leg['stake']:.2f}")
         lines += [
             f"*Leg {i} — {escape(leg['outcome'])}*",
             f"  📚 Book: `{escape(leg['book'])}`",
-            f"  💰 Odds: `{odds_str}`",
-            f"  📉 Implied: `{leg['implied_pct']}%`",
-            f"  💵 Stake \\($100 base\\): `${leg['stake']:.2f}`",
+            f"  💰 Odds: `{escape(odds_str)}`",
+            f"  📉 Implied: `{implied_pct_str}%`",
+            f"  💵 Stake \\($100 base\\): `{stake_str}`",
             "",
         ]
 
     total_implied = sum(l["implied_pct"] for l in arb.legs)
+    total_implied_str = escape(f"{total_implied:.2f}")
+    profit_str = escape(f"${arb.margin_pct:.2f}")
+    game_time_str = escape(arb.commence_time[:16].replace('T', ' '))
+
     lines += [
-        f"📊 *Total implied:* `{total_implied:.2f}%`",
-        f"✅ *Profit on $100:* `${arb.margin_pct:.2f}`",
-        f"🕐 Game time: `{arb.commence_time[:16].replace('T', ' ')} UTC`",
+        f"📊 *Total implied:* `{total_implied_str}%`",
+        f"✅ *Profit on $100:* `{profit_str}`",
+        f"🕐 Game time: `{game_time_str} UTC`",
     ]
 
     return "\n".join(lines)
@@ -66,10 +72,12 @@ def build_message(arb: ArbOpportunity) -> str:
 
 def escape(text: str) -> str:
     """Escape special MarkdownV2 characters."""
-    specials = r"\_*[]()~`>#+-=|{}.!"
+    # All special characters that need escaping in MarkdownV2
+    specials = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
+    result = text
     for ch in specials:
-        text = text.replace(ch, f"\\{ch}")
-    return text
+        result = result.replace(ch, f"\\{ch}")
+    return result
 
 
 async def _send_message(arb: ArbOpportunity, channel_id: str = None):

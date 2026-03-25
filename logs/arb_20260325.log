@@ -144,3 +144,39 @@ client_session: <aiohttp.client.ClientSession object at 0x102f23500>
 2026-03-25 16:04:47 | ERROR    | asyncio | Unclosed connector
 connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x104a8d970>, 279498.994633458)])']
 connector: <aiohttp.connector.TCPConnector object at 0x102576e40>
+2026-03-25 17:05:37 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 17:05:37 | INFO     | src.odds_fetcher | Found 7 active sports from target list
+2026-03-25 17:05:37 | INFO     | src.odds_fetcher | [americanfootball_ufl] API usage — used: 82, remaining: 418
+2026-03-25 17:05:37 | INFO     | src.odds_fetcher | [baseball_mlb] API usage — used: 84, remaining: 416
+2026-03-25 17:05:37 | INFO     | src.arb_calculator | Total arb opportunities found: 0
+2026-03-25 17:05:54 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 17:05:58 | ERROR    | src.discord_alerter | Discord send error: 'ForumChannel' object has no attribute 'send'
+2026-03-25 17:05:58 | ERROR    | src.telegram_alerter | Telegram alerter failed: AsyncClient.__init__() got an unexpected keyword argument 'proxies'
+2026-03-25 17:05:58 | ERROR    | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x109630650>, 283165.436304375)])']
+connector: <aiohttp.connector.TCPConnector object at 0x108d030e0>
+2026-03-25 17:06:54 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 17:06:56 | ERROR    | src.discord_alerter | Discord send error: 'ForumChannel' object has no attribute 'send'
+2026-03-25 17:06:56 | ERROR    | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x1096c2570>, 283225.545340375)])']
+connector: <aiohttp.connector.TCPConnector object at 0x1093f72f0>
+2026-03-25 17:06:59 | ERROR    | src.telegram_alerter | Telegram alerter failed: Can't parse entities: character '.' is reserved and must be escaped with the preceding '\'
+2026-03-25 17:07:40 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 17:15:12 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 17:15:14 | INFO     | src.discord_alerter | Discord alert sent to channel 1486472074452144300: Test Team A @ Test Team B | 2.85%
+2026-03-25 17:15:15 | ERROR    | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x106f32570>, 283726.078372333)])']
+connector: <aiohttp.connector.TCPConnector object at 0x106b8e9f0>
+2026-03-25 17:15:15 | ERROR    | src.telegram_alerter | Telegram alerter failed: Can't parse entities: character '.' is reserved and must be escaped with the preceding '\'
+2026-03-25 17:16:25 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 17:16:28 | INFO     | src.discord_alerter | Discord alert sent to channel 1486472074452144300: Test Team A @ Test Team B | 2.85%
+2026-03-25 17:16:28 | ERROR    | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x109fa6690>, 283799.372869291)])']
+connector: <aiohttp.connector.TCPConnector object at 0x109dd7950>
+2026-03-25 17:16:29 | ERROR    | src.telegram_alerter | Telegram alerter failed: Chat not found
+2026-03-25 17:21:15 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 17:21:17 | INFO     | src.telegram_alerter | Telegram alert sent to channel -1003692761880: Test Team A @ Test Team B | 2.85%
+2026-03-25 17:30:04 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 17:30:25 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 17:30:25 | INFO     | src.arb_calculator | ARB FOUND: B @ A | h2h | margin=3.33% | books=['Book1', 'Book1']
+2026-03-25 17:30:25 | INFO     | src.arb_calculator | Total arb opportunities found: 1

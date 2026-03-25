@@ -1,65 +1,55 @@
 """
-billing.py — SQLite-based subscription management for Stripe integration.
+billing.py — Supabase-based subscription management for Stripe integration.
 """
 
-import sqlite3
 import logging
 import os
-from datetime import datetime
 from typing import Optional
+from dotenv import load_dotenv
+from supabase import create_client, Client
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "subscriptions.db")
+# Supabase configuration
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
 
-
-def _get_connection() -> sqlite3.Connection:
-    """Get a thread-safe SQLite connection."""
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row  # Enable dict-like access
-    return conn
+# Initialize Supabase client
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 
 def init_db():
-    """Initialize the database schema. Called automatically on module import."""
-    conn = _get_connection()
+    """
+    Initialize the database schema (for Supabase compatibility).
+
+    Note: With Supabase, the table should be created via the Supabase dashboard:
+
+    CREATE TABLE subscriptions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id TEXT NOT NULL,
+        platform TEXT NOT NULL,
+        stripe_customer_id TEXT,
+        stripe_subscription_id TEXT,
+        active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        UNIQUE(user_id, platform)
+    );
+
+    CREATE INDEX idx_customer ON subscriptions(stripe_customer_id);
+    CREATE INDEX idx_active ON subscriptions(active, platform);
+
+    This function is kept for API compatibility with the SQLite version.
+    """
     try:
-        # Enable WAL mode for better concurrent access
-        conn.execute("PRAGMA journal_mode=WAL;")
-
-        # Create subscriptions table
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS subscriptions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT NOT NULL,
-                platform TEXT NOT NULL,
-                stripe_customer_id TEXT,
-                stripe_subscription_id TEXT,
-                status TEXT NOT NULL DEFAULT 'active',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(user_id, platform)
-            )
-        """)
-
-        # Create indexes
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_customer
-            ON subscriptions(stripe_customer_id)
-        """)
-
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_status
-            ON subscriptions(status, platform)
-        """)
-
-        conn.commit()
-        logger.info(f"Database initialized at {DB_PATH}")
+        # Test connection by attempting to read from the table
+        supabase.table("subscriptions").select("id").limit(1).execute()
+        logger.info("Supabase connection successful")
     except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
-        raise
-    finally:
-        conn.close()
+        logger.warning(f"Supabase table not found or connection failed: {e}")
+        logger.warning("Please create the 'subscriptions' table in Supabase dashboard")
 
 
 def mark_subscribed(
@@ -77,26 +67,34 @@ def mark_subscribed(
         customer_id: Stripe customer ID
         subscription_id: Stripe subscription ID
     """
-    conn = _get_connection()
     try:
-        conn.execute("""
-            INSERT INTO subscriptions
-            (user_id, platform, stripe_customer_id, stripe_subscription_id, status, updated_at)
-            VALUES (?, ?, ?, ?, 'active', CURRENT_TIMESTAMP)
-            ON CONFLICT(user_id, platform) DO UPDATE SET
-                stripe_customer_id=excluded.stripe_customer_id,
-                stripe_subscription_id=excluded.stripe_subscription_id,
-                status='active',
-                updated_at=CURRENT_TIMESTAMP
-        """, (user_id, platform, customer_id, subscription_id))
+        # Check if subscription already exists
+        existing = supabase.table("subscriptions").select("*").eq(
+            "user_id", user_id
+        ).eq("platform", platform).execute()
 
-        conn.commit()
+        if existing.data:
+            # Update existing subscription
+            supabase.table("subscriptions").update({
+                "stripe_customer_id": customer_id,
+                "stripe_subscription_id": subscription_id,
+                "active": True,
+                "updated_at": "now()"
+            }).eq("user_id", user_id).eq("platform", platform).execute()
+        else:
+            # Insert new subscription
+            supabase.table("subscriptions").insert({
+                "user_id": user_id,
+                "platform": platform,
+                "stripe_customer_id": customer_id,
+                "stripe_subscription_id": subscription_id,
+                "active": True
+            }).execute()
+
         logger.info(f"Marked {platform} user {user_id} as subscribed")
     except Exception as e:
         logger.error(f"Failed to mark subscription: {e}")
         raise
-    finally:
-        conn.close()
 
 
 def is_subscribed(user_id: str, platform: str) -> bool:
@@ -110,23 +108,18 @@ def is_subscribed(user_id: str, platform: str) -> bool:
     Returns:
         True if user has active subscription, False otherwise
     """
-    conn = _get_connection()
     try:
-        cursor = conn.execute("""
-            SELECT status FROM subscriptions
-            WHERE user_id = ? AND platform = ?
-        """, (user_id, platform))
+        result = supabase.table("subscriptions").select("active").eq(
+            "user_id", user_id
+        ).eq("platform", platform).execute()
 
-        row = cursor.fetchone()
-        if row is None:
+        if not result.data:
             return False
 
-        return row['status'] == 'active'
+        return result.data[0].get("active", False)
     except Exception as e:
         logger.error(f"Failed to check subscription status: {e}")
         return False  # Fail-safe: treat as unsubscribed on error
-    finally:
-        conn.close()
 
 
 def cancel_subscription(customer_id: str) -> None:
@@ -136,33 +129,26 @@ def cancel_subscription(customer_id: str) -> None:
     Args:
         customer_id: Stripe customer ID
     """
-    conn = _get_connection()
     try:
         # Find subscription by customer_id
-        cursor = conn.execute("""
-            SELECT user_id, platform FROM subscriptions
-            WHERE stripe_customer_id = ?
-        """, (customer_id,))
+        result = supabase.table("subscriptions").select(
+            "user_id, platform"
+        ).eq("stripe_customer_id", customer_id).execute()
 
-        row = cursor.fetchone()
-        if row is None:
+        if not result.data:
             logger.warning(f"No subscription found for customer {customer_id}")
             return
 
-        # Update status to canceled/expired
-        conn.execute("""
-            UPDATE subscriptions
-            SET status = 'canceled', updated_at = CURRENT_TIMESTAMP
-            WHERE stripe_customer_id = ?
-        """, (customer_id,))
+        # Update status to inactive
+        supabase.table("subscriptions").update({
+            "active": False,
+            "updated_at": "now()"
+        }).eq("stripe_customer_id", customer_id).execute()
 
-        conn.commit()
         logger.info(f"Canceled subscription for customer {customer_id}")
     except Exception as e:
         logger.error(f"Failed to cancel subscription: {e}")
         raise
-    finally:
-        conn.close()
 
 
 def get_subscription_by_customer(customer_id: str) -> Optional[dict]:
@@ -175,24 +161,19 @@ def get_subscription_by_customer(customer_id: str) -> Optional[dict]:
     Returns:
         Dictionary with subscription details or None if not found
     """
-    conn = _get_connection()
     try:
-        cursor = conn.execute("""
-            SELECT * FROM subscriptions
-            WHERE stripe_customer_id = ?
-        """, (customer_id,))
+        result = supabase.table("subscriptions").select("*").eq(
+            "stripe_customer_id", customer_id
+        ).execute()
 
-        row = cursor.fetchone()
-        if row is None:
+        if not result.data:
             return None
 
-        return dict(row)
+        return result.data[0]
     except Exception as e:
         logger.error(f"Failed to fetch subscription: {e}")
         return None
-    finally:
-        conn.close()
 
 
-# Initialize database on module import
+# Initialize database connection on module import
 init_db()
