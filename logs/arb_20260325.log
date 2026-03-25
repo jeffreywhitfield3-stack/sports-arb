@@ -1,0 +1,146 @@
+2026-03-25 15:25:48 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | Found 77 active US sports
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | [americanfootball_ncaaf] API usage — used: 2, remaining: 498
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | Fetched 9 events for americanfootball_ncaaf
+2026-03-25 15:25:49 | WARNING  | src.odds_fetcher | HTTP error fetching americanfootball_ncaaf_championship_winner: 422 Client Error: Unprocessable Entity for url: https://api.the-odds-api.com/v4/sports/americanfootball_ncaaf_championship_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:49 | WARNING  | src.odds_fetcher | HTTP error fetching americanfootball_nfl_super_bowl_winner: 422 Client Error: Unprocessable Entity for url: https://api.the-odds-api.com/v4/sports/americanfootball_nfl_super_bowl_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | [americanfootball_ufl] API usage — used: 4, remaining: 496
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | Fetched 4 events for americanfootball_ufl
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | [aussierules_afl] API usage — used: 6, remaining: 494
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | Fetched 7 events for aussierules_afl
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | [baseball_mlb] API usage — used: 8, remaining: 492
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | Fetched 15 events for baseball_mlb
+2026-03-25 15:25:49 | WARNING  | src.odds_fetcher | HTTP error fetching baseball_mlb_world_series_winner: 422 Client Error: Unprocessable Entity for url: https://api.the-odds-api.com/v4/sports/baseball_mlb_world_series_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | [baseball_ncaa] API usage — used: 10, remaining: 490
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | Fetched 10 events for baseball_ncaa
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | [basketball_euroleague] API usage — used: 12, remaining: 488
+2026-03-25 15:25:49 | INFO     | src.odds_fetcher | Fetched 10 events for basketball_euroleague
+2026-03-25 15:25:49 | WARNING  | src.odds_fetcher | HTTP error fetching basketball_nba: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/basketball_nba/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:50 | WARNING  | src.odds_fetcher | HTTP error fetching basketball_nba_championship_winner: 422 Client Error: Unprocessable Entity for url: https://api.the-odds-api.com/v4/sports/basketball_nba_championship_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:50 | WARNING  | src.odds_fetcher | HTTP error fetching basketball_nbl: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/basketball_nbl/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:50 | INFO     | src.odds_fetcher | [basketball_ncaab] API usage — used: 14, remaining: 486
+2026-03-25 15:25:50 | INFO     | src.odds_fetcher | Fetched 19 events for basketball_ncaab
+2026-03-25 15:25:50 | WARNING  | src.odds_fetcher | HTTP error fetching basketball_ncaab_championship_winner: 422 Client Error: Unprocessable Entity for url: https://api.the-odds-api.com/v4/sports/basketball_ncaab_championship_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:50 | INFO     | src.odds_fetcher | [basketball_wncaab] API usage — used: 16, remaining: 484
+2026-03-25 15:25:50 | INFO     | src.odds_fetcher | Fetched 8 events for basketball_wncaab
+2026-03-25 15:25:50 | INFO     | src.odds_fetcher | [boxing_boxing] API usage — used: 18, remaining: 482
+2026-03-25 15:25:50 | INFO     | src.odds_fetcher | Fetched 44 events for boxing_boxing
+2026-03-25 15:25:50 | WARNING  | src.odds_fetcher | HTTP error fetching golf_masters_tournament_winner: 422 Client Error: Unprocessable Entity for url: https://api.the-odds-api.com/v4/sports/golf_masters_tournament_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:50 | WARNING  | src.odds_fetcher | HTTP error fetching golf_pga_championship_winner: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/golf_pga_championship_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:50 | WARNING  | src.odds_fetcher | HTTP error fetching golf_the_open_championship_winner: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/golf_the_open_championship_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:50 | WARNING  | src.odds_fetcher | HTTP error fetching golf_us_open_winner: 422 Client Error: Unprocessable Entity for url: https://api.the-odds-api.com/v4/sports/golf_us_open_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:50 | INFO     | src.odds_fetcher | [icehockey_ahl] API usage — used: 20, remaining: 480
+2026-03-25 15:25:50 | INFO     | src.odds_fetcher | Fetched 10 events for icehockey_ahl
+2026-03-25 15:25:51 | INFO     | src.odds_fetcher | [icehockey_liiga] API usage — used: 22, remaining: 478
+2026-03-25 15:25:51 | INFO     | src.odds_fetcher | Fetched 2 events for icehockey_liiga
+2026-03-25 15:25:51 | INFO     | src.odds_fetcher | [icehockey_mestis] API usage — used: 24, remaining: 476
+2026-03-25 15:25:51 | INFO     | src.odds_fetcher | Fetched 2 events for icehockey_mestis
+2026-03-25 15:25:51 | WARNING  | src.odds_fetcher | HTTP error fetching icehockey_nhl: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/icehockey_nhl/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:51 | WARNING  | src.odds_fetcher | HTTP error fetching icehockey_nhl_championship_winner: 422 Client Error: Unprocessable Entity for url: https://api.the-odds-api.com/v4/sports/icehockey_nhl_championship_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:51 | WARNING  | src.odds_fetcher | HTTP error fetching icehockey_sweden_allsvenskan: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/icehockey_sweden_allsvenskan/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:51 | WARNING  | src.odds_fetcher | HTTP error fetching icehockey_sweden_hockey_league: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/icehockey_sweden_hockey_league/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:51 | WARNING  | src.odds_fetcher | HTTP error fetching politics_us_presidential_election_winner: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/politics_us_presidential_election_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:51 | INFO     | src.odds_fetcher | [soccer_argentina_primera_division] API usage — used: 26, remaining: 474
+2026-03-25 15:25:51 | INFO     | src.odds_fetcher | Fetched 18 events for soccer_argentina_primera_division
+2026-03-25 15:25:51 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_australia_aleague: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_australia_aleague/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:51 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_austria_bundesliga: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_austria_bundesliga/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:51 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_belgium_first_div: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_belgium_first_div/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:51 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_brazil_campeonato: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_brazil_campeonato/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | [soccer_brazil_serie_b] API usage — used: 28, remaining: 472
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | Fetched 10 events for soccer_brazil_serie_b
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | [soccer_china_superleague] API usage — used: 30, remaining: 470
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | Fetched 8 events for soccer_china_superleague
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | [soccer_conmebol_copa_libertadores] API usage — used: 32, remaining: 468
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | Fetched 33 events for soccer_conmebol_copa_libertadores
+2026-03-25 15:25:52 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_conmebol_copa_sudamericana: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_conmebol_copa_sudamericana/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | [soccer_denmark_superliga] API usage — used: 34, remaining: 466
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | Fetched 6 events for soccer_denmark_superliga
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | [soccer_efl_champ] API usage — used: 36, remaining: 464
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | Fetched 11 events for soccer_efl_champ
+2026-03-25 15:25:52 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_england_league1: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_england_league1/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | [soccer_england_league2] API usage — used: 38, remaining: 462
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | Fetched 10 events for soccer_england_league2
+2026-03-25 15:25:52 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_epl: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_epl/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | [soccer_fa_cup] API usage — used: 40, remaining: 460
+2026-03-25 15:25:52 | INFO     | src.odds_fetcher | Fetched 4 events for soccer_fa_cup
+2026-03-25 15:25:53 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_fifa_world_cup: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_fifa_world_cup/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:53 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_fifa_world_cup_qualifiers_europe: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_fifa_world_cup_qualifiers_europe/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:53 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_fifa_world_cup_winner: 422 Client Error: Unprocessable Entity for url: https://api.the-odds-api.com/v4/sports/soccer_fifa_world_cup_winner/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:53 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_finland_veikkausliiga: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_finland_veikkausliiga/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:53 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_france_coupe_de_france: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_france_coupe_de_france/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:53 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_france_ligue_one: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_france_ligue_one/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:53 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_france_ligue_two: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_france_ligue_two/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:53 | INFO     | src.odds_fetcher | [soccer_germany_bundesliga] API usage — used: 42, remaining: 458
+2026-03-25 15:25:53 | INFO     | src.odds_fetcher | Fetched 18 events for soccer_germany_bundesliga
+2026-03-25 15:25:53 | INFO     | src.odds_fetcher | [soccer_germany_bundesliga2] API usage — used: 44, remaining: 456
+2026-03-25 15:25:53 | INFO     | src.odds_fetcher | Fetched 9 events for soccer_germany_bundesliga2
+2026-03-25 15:25:53 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_germany_bundesliga_women: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_germany_bundesliga_women/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:53 | INFO     | src.odds_fetcher | [soccer_germany_dfb_pokal] API usage — used: 46, remaining: 454
+2026-03-25 15:25:53 | INFO     | src.odds_fetcher | Fetched 2 events for soccer_germany_dfb_pokal
+2026-03-25 15:25:54 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_germany_liga3: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_germany_liga3/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:54 | INFO     | src.odds_fetcher | [soccer_greece_super_league] API usage — used: 48, remaining: 452
+2026-03-25 15:25:54 | INFO     | src.odds_fetcher | Fetched 7 events for soccer_greece_super_league
+2026-03-25 15:25:54 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_italy_serie_a: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_italy_serie_a/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:54 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_japan_j_league: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_japan_j_league/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:54 | INFO     | src.odds_fetcher | [soccer_korea_kleague1] API usage — used: 50, remaining: 450
+2026-03-25 15:25:54 | INFO     | src.odds_fetcher | Fetched 4 events for soccer_korea_kleague1
+2026-03-25 15:25:54 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_mexico_ligamx: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_mexico_ligamx/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:54 | INFO     | src.odds_fetcher | [soccer_netherlands_eredivisie] API usage — used: 52, remaining: 448
+2026-03-25 15:25:54 | INFO     | src.odds_fetcher | Fetched 9 events for soccer_netherlands_eredivisie
+2026-03-25 15:25:54 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_norway_eliteserien: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_norway_eliteserien/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:54 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_portugal_primeira_liga: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_portugal_primeira_liga/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:54 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_spain_copa_del_rey: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_spain_copa_del_rey/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:55 | INFO     | src.odds_fetcher | [soccer_spain_la_liga] API usage — used: 54, remaining: 446
+2026-03-25 15:25:55 | INFO     | src.odds_fetcher | Fetched 20 events for soccer_spain_la_liga
+2026-03-25 15:25:55 | INFO     | src.odds_fetcher | [soccer_spain_segunda_division] API usage — used: 56, remaining: 444
+2026-03-25 15:25:55 | INFO     | src.odds_fetcher | Fetched 17 events for soccer_spain_segunda_division
+2026-03-25 15:25:55 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_spl: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_spl/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:55 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_sweden_allsvenskan: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_sweden_allsvenskan/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:55 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_switzerland_superleague: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_switzerland_superleague/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:55 | INFO     | src.odds_fetcher | [soccer_uefa_champs_league] API usage — used: 58, remaining: 442
+2026-03-25 15:25:55 | INFO     | src.odds_fetcher | Fetched 4 events for soccer_uefa_champs_league
+2026-03-25 15:25:55 | INFO     | src.odds_fetcher | [soccer_uefa_champs_league_women] API usage — used: 60, remaining: 440
+2026-03-25 15:25:55 | INFO     | src.odds_fetcher | Fetched 2 events for soccer_uefa_champs_league_women
+2026-03-25 15:25:55 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_uefa_europa_conference_league: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_uefa_europa_conference_league/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:55 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_uefa_europa_league: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_uefa_europa_league/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:55 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_uefa_nations_league: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_uefa_nations_league/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:55 | WARNING  | src.odds_fetcher | HTTP error fetching soccer_usa_mls: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/soccer_usa_mls/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:55 | INFO     | src.odds_fetcher | [tennis_atp_miami_open] API usage — used: 62, remaining: 438
+2026-03-25 15:25:55 | INFO     | src.odds_fetcher | Fetched 4 events for tennis_atp_miami_open
+2026-03-25 15:25:56 | WARNING  | src.odds_fetcher | HTTP error fetching tennis_wta_miami_open: 429 Client Error: Too Many Requests for url: https://api.the-odds-api.com/v4/sports/tennis_wta_miami_open/odds?apiKey=c76100b1b7dc911f1d96a79e241b2d97&regions=us&markets=h2h%2Cspreads&oddsFormat=american&dateFormat=iso
+2026-03-25 15:25:56 | INFO     | src.odds_fetcher | Total events fetched: 336
+2026-03-25 15:36:05 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 15:36:05 | INFO     | src.odds_fetcher | Found 7 active sports from target list
+2026-03-25 15:36:05 | INFO     | src.odds_fetcher | [americanfootball_ufl] API usage — used: 64, remaining: 436
+2026-03-25 15:36:05 | INFO     | src.odds_fetcher | Fetched 4 events for americanfootball_ufl
+2026-03-25 15:36:05 | INFO     | src.odds_fetcher | [baseball_mlb] API usage — used: 66, remaining: 434
+2026-03-25 15:36:05 | INFO     | src.odds_fetcher | Fetched 15 events for baseball_mlb
+2026-03-25 15:36:05 | INFO     | src.odds_fetcher | [basketball_nba] API usage — used: 68, remaining: 432
+2026-03-25 15:36:05 | INFO     | src.odds_fetcher | Fetched 12 events for basketball_nba
+2026-03-25 15:36:05 | INFO     | src.odds_fetcher | [basketball_ncaab] API usage — used: 70, remaining: 430
+2026-03-25 15:36:05 | INFO     | src.odds_fetcher | Fetched 31 events for basketball_ncaab
+2026-03-25 15:36:06 | INFO     | src.odds_fetcher | [boxing_boxing] API usage — used: 72, remaining: 428
+2026-03-25 15:36:06 | INFO     | src.odds_fetcher | Fetched 44 events for boxing_boxing
+2026-03-25 15:36:06 | INFO     | src.odds_fetcher | [icehockey_nhl] API usage — used: 74, remaining: 426
+2026-03-25 15:36:06 | INFO     | src.odds_fetcher | Fetched 15 events for icehockey_nhl
+2026-03-25 15:36:06 | INFO     | src.odds_fetcher | [mma_mixed_martial_arts] API usage — used: 76, remaining: 424
+2026-03-25 15:36:06 | INFO     | src.odds_fetcher | Fetched 72 events for mma_mixed_martial_arts
+2026-03-25 15:36:06 | INFO     | src.odds_fetcher | Total events fetched: 193
+2026-03-25 15:36:06 | INFO     | src.arb_calculator | ARB FOUND: Pittsburgh Pirates @ New York Mets | spreads | margin=29.20% | books=['Bovada', 'BetMGM']
+2026-03-25 15:36:06 | INFO     | src.arb_calculator | Total arb opportunities found: 1
+2026-03-25 15:43:51 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 15:43:51 | INFO     | src.odds_fetcher | Found 7 active sports from target list
+2026-03-25 15:43:51 | INFO     | src.odds_fetcher | [americanfootball_ufl] API usage — used: 78, remaining: 422
+2026-03-25 15:43:51 | INFO     | src.odds_fetcher | [baseball_mlb] API usage — used: 80, remaining: 420
+2026-03-25 15:43:51 | INFO     | src.arb_calculator | Total arb opportunities found: 0
+2026-03-25 16:03:21 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 16:03:21 | WARNING  | discord.client | PyNaCl is not installed, voice will NOT be supported
+2026-03-25 16:03:21 | ERROR    | src.discord_alerter | Discord alerter failed: Cannot connect to host discord.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)')]
+2026-03-25 16:03:21 | ERROR    | asyncio | Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x102f23500>
+2026-03-25 16:04:45 | INFO     | root | Logging initialised → /Users/jeffreywhitfield/Downloads/sports_arb/src/../logs/arb_20260325.log
+2026-03-25 16:04:45 | WARNING  | discord.client | PyNaCl is not installed, voice will NOT be supported
+2026-03-25 16:04:47 | INFO     | src.discord_alerter | Discord alert sent: Test Pirates @ Test Mets | 3.45%
+2026-03-25 16:04:47 | ERROR    | asyncio | Unclosed connector
+connections: ['deque([(<aiohttp.client_proto.ResponseHandler object at 0x104a8d970>, 279498.994633458)])']
+connector: <aiohttp.connector.TCPConnector object at 0x102576e40>
