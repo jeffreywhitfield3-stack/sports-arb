@@ -273,6 +273,191 @@ Use any future expiration date, any 3-digit CVC, and any billing ZIP code.
 
 ---
 
+## Deployment
+
+### Option 1: Railway (Recommended - Single Service)
+
+Our architecture runs everything in one process, so you only need **one service**:
+
+1. **Push to GitHub:**
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin https://github.com/yourusername/sports-arb.git
+   git push -u origin main
+   ```
+
+2. **Deploy to Railway:**
+   - Go to [railway.app](https://railway.app) → Sign in with GitHub
+   - Click **New Project** → **Deploy from GitHub repo**
+   - Select your `sports-arb` repository
+   - Railway auto-detects Python and installs dependencies
+
+3. **Configure the service:**
+   - Go to your service → **Settings** → **Deploy**
+   - **Start Command**: `python3 main.py`
+   - **Restart Policy**: Always (so it restarts if it crashes)
+
+4. **Add environment variables:**
+   - Go to **Variables** tab
+   - Add all your `.env` keys (click **Raw Editor** and paste):
+     ```
+     ODDS_API_KEY=your_key_here
+     DISCORD_BOT_TOKEN=your_token
+     DISCORD_GUILD_ID=your_guild_id
+     DISCORD_FREE_CHANNEL_ID=your_free_channel
+     DISCORD_PREMIUM_CHANNEL_ID=your_premium_channel
+     DISCORD_PREMIUM_ROLE_ID=your_role_id
+     TELEGRAM_BOT_TOKEN=your_token
+     TELEGRAM_FREE_CHANNEL_ID=your_free_channel
+     TELEGRAM_PREMIUM_CHANNEL_ID=your_premium_channel
+     TELEGRAM_PREMIUM_INVITE_LINK=your_invite_link
+     STRIPE_SECRET_KEY=sk_live_your_key
+     STRIPE_PRICE_ID=price_your_id
+     STRIPE_WEBHOOK_SECRET=whsec_your_secret
+     STRIPE_SUCCESS_URL=https://yourdomain.com/success
+     STRIPE_CANCEL_URL=https://yourdomain.com/cancel
+     ```
+
+5. **Get the public URL for webhooks:**
+   - Go to **Settings** → **Networking** → **Generate Domain**
+   - Copy the URL (e.g., `https://sports-arb-production.up.railway.app`)
+   - The webhook endpoint will be: `https://your-domain.up.railway.app/webhook`
+
+6. **Update Stripe webhook:**
+   - Go to [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks)
+   - Update your webhook endpoint URL to your Railway domain + `/webhook`
+   - Verify events: `checkout.session.completed`, `customer.subscription.deleted`
+
+7. **Deploy:**
+   - Railway auto-deploys on every `git push`
+   - Check logs in Railway dashboard to verify all threads started
+
+### Option 2: Render
+
+1. **Push to GitHub** (same as above)
+
+2. **Deploy to Render:**
+   - Go to [render.com](https://render.com) → **New** → **Web Service**
+   - Connect GitHub → select your `sports-arb` repository
+
+3. **Configure the service:**
+   ```
+   Name: sports-arb
+   Environment: Python
+   Build Command: pip install -r requirements.txt
+   Start Command: python3 main.py
+   Instance Type: Free (or paid for better uptime)
+   ```
+
+4. **Add environment variables:**
+   - In Render dashboard → **Environment** tab
+   - Add all variables from your `.env` file (same as Railway step 4)
+
+5. **Get the webhook URL:**
+   - Render gives you a URL like: `https://sports-arb.onrender.com`
+   - Your webhook endpoint: `https://sports-arb.onrender.com/webhook`
+
+6. **Update Stripe webhook** (same as Railway step 6)
+
+7. **Important for Render Free Tier:**
+   - Free tier spins down after 15 min of inactivity
+   - Add a health check ping service like [UptimeRobot](https://uptimerobot.com) to ping `https://your-app.onrender.com/health` every 5 minutes
+   - Or upgrade to paid tier for always-on service
+
+### Option 3: Docker (Self-Hosted)
+
+1. **Create Dockerfile:**
+   ```dockerfile
+   FROM python:3.12-slim
+
+   WORKDIR /app
+
+   COPY requirements.txt .
+   RUN pip install --no-cache-dir -r requirements.txt
+
+   COPY . .
+
+   CMD ["python3", "main.py"]
+   ```
+
+2. **Build and run:**
+   ```bash
+   docker build -t sports-arb .
+   docker run -d --name sports-arb --env-file .env sports-arb
+   ```
+
+3. **Expose port 5000** for webhooks:
+   ```bash
+   docker run -d -p 5000:5000 --name sports-arb --env-file .env sports-arb
+   ```
+
+4. **Use a reverse proxy** (nginx/Caddy) to expose the webhook endpoint with HTTPS
+
+### Important Deployment Notes
+
+1. **Database persistence:**
+   - Railway/Render: The SQLite database is stored in ephemeral storage and will reset on redeploys
+   - For production, consider mounting a persistent volume or using PostgreSQL
+   - Add to Railway: **Volumes** → Mount `/app/data` to persist `subscriptions.db`
+
+2. **Webhook HTTPS requirement:**
+   - Stripe requires HTTPS for production webhooks
+   - Railway and Render provide HTTPS automatically
+   - For self-hosted, use Let's Encrypt or Cloudflare
+
+3. **Environment-specific secrets:**
+   - **Development**: Use Stripe test keys (`sk_test_...`) and test webhook secret
+   - **Production**: Use live keys (`sk_live_...`) and production webhook secret
+   - Never commit `.env` to version control (it's in `.gitignore`)
+
+4. **Monitoring:**
+   - Check Railway/Render logs for errors
+   - Monitor Stripe webhook delivery in Stripe Dashboard
+   - Set up alerting for failed webhook deliveries
+
+5. **Scaling considerations:**
+   - Free tiers are sufficient for personal use
+   - For higher volume:
+     - Railway/Render paid tiers for always-on service
+     - Consider Redis for webhook event queuing
+     - Use PostgreSQL instead of SQLite for concurrent access
+
+### Verifying Deployment
+
+After deployment, verify everything works:
+
+1. **Health check:**
+   ```bash
+   curl https://your-domain.com/health
+   # Should return: {"status": "healthy"}
+   ```
+
+2. **Check logs** for startup messages:
+   ```
+   ✓ Flask webhook server thread started
+   ✓ Telegram bot thread started
+   ✓ Discord bot thread started
+   All systems ready. Starting polling loop...
+   ```
+
+3. **Test Discord slash command:**
+   - Type `/subscribe` in your Discord server
+   - Should receive ephemeral message with Stripe link
+
+4. **Test Telegram command:**
+   - Send `/start` to your bot
+   - Send `/subscribe`
+   - Should receive Stripe checkout link
+
+5. **Test webhook:**
+   - Make a test subscription in Stripe
+   - Check logs for "Stripe event received: checkout.session.completed"
+   - Verify premium access was granted
+
+---
+
 ## Example Alert
 
 **Discord embed:**
