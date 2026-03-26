@@ -44,9 +44,9 @@ logger = logging.getLogger(__name__)
 POLL_INTERVAL_MINUTES = 10
 ENABLE_POLLING = os.getenv("ENABLE_POLLING", "true").lower() == "true"
 
-# Premium-only channels (no free tier)
-PREMIUM_DISCORD_CHANNEL = int(os.getenv("DISCORD_PREMIUM_CHANNEL_ID", os.getenv("DISCORD_CHANNEL_ID", "0")))
-PREMIUM_TELEGRAM_CHANNEL = os.getenv("TELEGRAM_PREMIUM_CHANNEL_ID", os.getenv("TELEGRAM_CHANNEL_ID"))
+# Premium channel IDs
+DISCORD_CHANNEL = int(os.getenv("DISCORD_CHANNEL_ID", "0"))
+TELEGRAM_CHANNEL = os.getenv("TELEGRAM_CHANNEL_ID")
 
 
 def poll_and_alert():
@@ -111,16 +111,16 @@ def poll_and_alert():
         except Exception as e:
             logger.error(f"Failed to store arb: {e}")
 
-    # 4. Send ALL arbs to premium channels only (no free tier)
-    logger.info(f"Sending {len(arbs)} alert(s) to premium channels")
+    # 4. Send ALL arbs to channels (premium-only service)
+    logger.info(f"Sending {len(arbs)} alert(s) to channels")
 
     try:
-        send_discord_alerts(arbs, channel_id=PREMIUM_DISCORD_CHANNEL)
+        send_discord_alerts(arbs, channel_id=DISCORD_CHANNEL)
     except Exception as e:
         logger.error(f"Discord alerts failed: {e}")
 
     try:
-        send_telegram_alerts(arbs, channel_id=PREMIUM_TELEGRAM_CHANNEL)
+        send_telegram_alerts(arbs, channel_id=TELEGRAM_CHANNEL)
     except Exception as e:
         logger.error(f"Telegram alerts failed: {e}")
 

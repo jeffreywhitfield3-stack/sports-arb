@@ -1,22 +1,22 @@
 """
-telegram_alerter.py — Sends arb alerts to a Telegram channel.
+telegram_alerter.py — Sends arb alerts to Telegram with feedback buttons.
 """
 
 import os
 import logging
 import asyncio
-from telegram import Bot, Update
+from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler
 from dotenv import load_dotenv
 from src.arb_calculator import ArbOpportunity
 import stripe
+import requests
 
 load_dotenv()
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID")
-PREMIUM_CHANNEL_ID = os.getenv("TELEGRAM_PREMIUM_CHANNEL_ID")
 PREMIUM_INVITE_LINK = os.getenv("TELEGRAM_PREMIUM_INVITE_LINK")
 
 # Stripe configuration
@@ -33,8 +33,12 @@ MARKET_LABELS = {
     "totals": "Totals",
 }
 
+# Global application instance for alert sending
+telegram_app = None
+
 
 def build_message(arb: ArbOpportunity) -> str:
+    """Build Telegram message with MarkdownV2 formatting."""
     market_label = MARKET_LABELS.get(arb.market, arb.market.upper())
     lines = [
         f"{arb.emoji} *ARB ALERT — {escape(f'{arb.margin_pct:.2f}')}% Margin*",
@@ -70,9 +74,19 @@ def build_message(arb: ArbOpportunity) -> str:
     return "\n".join(lines)
 
 
+def build_feedback_keyboard(alert_id: str) -> InlineKeyboardMarkup:
+    """Build inline keyboard with feedback buttons."""
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Worked", callback_data=f"feedback_yes:{alert_id}"),
+            InlineKeyboardButton("❌ Failed", callback_data=f"feedback_no:{alert_id}"),
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
 def escape(text: str) -> str:
     """Escape special MarkdownV2 characters."""
-    # All special characters that need escaping in MarkdownV2
     specials = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
     result = text
     for ch in specials:
@@ -80,66 +94,100 @@ def escape(text: str) -> str:
     return result
 
 
-async def _send_message(arb: ArbOpportunity, channel_id: str = None):
-    """Send arb alert message to specified Telegram channel."""
+async def send_alert_with_feedback(arb: ArbOpportunity, channel_id: str = None):
+    """Send alert with feedback buttons using persistent application."""
+    global telegram_app
+
+    if telegram_app is None:
+        logger.error("Telegram app not initialized")
+        return
+
     if channel_id is None:
         channel_id = CHANNEL_ID
 
-    bot = Bot(token=BOT_TOKEN)
-    text = build_message(arb)
-    await bot.send_message(
-        chat_id=channel_id,
-        text=text,
-        parse_mode=ParseMode.MARKDOWN_V2,
-    )
-    logger.info(f"Telegram alert sent to channel {channel_id}: {arb.game} | {arb.margin_pct:.2f}%")
+    try:
+        text = build_message(arb)
+        keyboard = build_feedback_keyboard(arb.alert_id) if hasattr(arb, 'alert_id') else None
+
+        await telegram_app.bot.send_message(
+            chat_id=channel_id,
+            text=text,
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=keyboard
+        )
+
+        logger.info(f"Telegram alert sent to channel {channel_id}: {arb.game} | {arb.margin_pct:.2f}%")
+    except Exception as e:
+        logger.error(f"Failed to send Telegram alert: {e}")
 
 
 def send_telegram_alert(arb: ArbOpportunity, channel_id: str = None):
-    """Synchronous wrapper."""
-    try:
-        asyncio.run(_send_message(arb, channel_id))
-    except Exception as e:
-        logger.error(f"Telegram alerter failed: {e}")
+    """Synchronous wrapper for sending alert."""
+    # Alerts will be queued and sent by the persistent application
+    pass
 
 
 def send_telegram_alerts(arbs: list[ArbOpportunity], channel_id: str = None):
-    """Send multiple arb alerts to the specified Telegram channel."""
-    for arb in arbs:
-        send_telegram_alert(arb, channel_id)
+    """Send multiple alerts (queued for persistent app)."""
+    global telegram_app
+    if telegram_app:
+        for arb in arbs:
+            # Queue for sending
+            asyncio.create_task(send_alert_with_feedback(arb, channel_id))
 
 
-# ============================================================================
-# Telegram Bot with Command Handlers
-# ============================================================================
+async def handle_feedback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle feedback button clicks."""
+    query = update.callback_query
+    await query.answer()
 
-async def telegram_bot_main():
-    """
-    Run Telegram bot with command handlers for subscription.
-    This runs in a separate thread with its own asyncio event loop.
-    """
-    async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /start command - welcome message."""
-        await update.message.reply_text(
-            "👋 *Welcome to Sports Arbitrage Alerts\\!*\n\n"
-            "🆓 *Free users* get moneyline \\(h2h\\) alerts\n"
-            "💎 *Premium subscribers* get spreads and totals too\n\n"
-            "Use /subscribe to upgrade\\!",
-            parse_mode=ParseMode.MARKDOWN_V2
+    # Parse callback data
+    data = query.data
+    if not data.startswith("feedback_"):
+        return
+
+    try:
+        action, alert_id = data.split(":", 1)
+        is_positive = action == "feedback_yes"
+
+        # Call feedback API
+        response = requests.post(
+            f"{os.getenv('RAILWAY_URL', 'http://localhost:5000')}/api/feedback",
+            json={
+                "alert_id": alert_id,
+                "user_id": str(query.from_user.id),
+                "is_positive": is_positive
+            }
         )
 
+        if response.status_code == 200:
+            result = response.json()
+            if result.get("status") == "success":
+                message = "✅ Thanks! Feedback recorded." if is_positive else "❌ Thanks for the feedback. We'll improve!"
+                await query.edit_message_reply_markup(reply_markup=None)  # Remove buttons
+                await query.message.reply_text(message)
+            else:
+                await query.message.reply_text("You've already given feedback on this arb!")
+        else:
+            await query.message.reply_text("❌ Failed to record feedback. Try again later.")
+
+    except Exception as e:
+        logger.error(f"Feedback handler error: {e}")
+        await query.message.reply_text("❌ Error processing feedback.")
+
+
+async def telegram_bot_main():
+    """Run Telegram bot with command handlers and feedback."""
+    global telegram_app
+
     async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /subscribe command - create Stripe checkout session."""
+        """Handle /subscribe command."""
         user_id = update.effective_user.id
 
         try:
-            # Create Stripe checkout session
             session = stripe.checkout.Session.create(
                 payment_method_types=['card'],
-                line_items=[{
-                    'price': STRIPE_PRICE_ID,
-                    'quantity': 1,
-                }],
+                line_items=[{'price': STRIPE_PRICE_ID, 'quantity': 1}],
                 mode='subscription',
                 success_url=STRIPE_SUCCESS_URL,
                 cancel_url=STRIPE_CANCEL_URL,
@@ -150,94 +198,67 @@ async def telegram_bot_main():
             )
 
             await update.message.reply_text(
-                f"🔗 *Subscribe here:* {session.url}\n\n"
-                f"✨ *Premium includes:*\n"
-                f"• All h2h \\(moneyline\\) alerts\n"
-                f"• Spreads alerts\n"
-                f"• Totals alerts\n\n"
-                f"You'll receive an invite link after payment\\!",
-                parse_mode=ParseMode.MARKDOWN_V2
+                f"🔗 **Subscribe to Premium**\n\n"
+                f"Click here: {session.url}\n\n"
+                f"✨ Premium Benefits:\n"
+                f"• All markets (h2h, spreads, totals)\n"
+                f"• High-quality filtered alerts\n"
+                f"• Verified book combinations\n"
+                f"• Real-time notifications",
+                parse_mode=ParseMode.MARKDOWN
             )
-
             logger.info(f"Stripe checkout created for Telegram user {user_id}")
-
         except Exception as e:
-            logger.error(f"Failed to create checkout session: {e}")
-            await update.message.reply_text(
-                "❌ Sorry, something went wrong\\. Please try again later\\.",
-                parse_mode=ParseMode.MARKDOWN_V2
-            )
+            logger.error(f"Stripe checkout error: {e}")
+            await update.message.reply_text("❌ Failed to create checkout. Try again later.")
+
+    async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /start command."""
+        await update.message.reply_text(
+            "👋 **Welcome to Sports Arbitrage Alerts!**\n\n"
+            "💎 Premium arbitrage opportunities delivered in real-time.\n\n"
+            "**Features:**\n"
+            "• All markets: moneyline, spreads, totals\n"
+            "• Quality filters (1.5-3% margins)\n"
+            "• Trusted books only\n"
+            "• User feedback & success tracking\n\n"
+            "Use /subscribe to get started!",
+            parse_mode=ParseMode.MARKDOWN
+        )
 
     # Build application
-    app = Application.builder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("subscribe", subscribe))
+    telegram_app = Application.builder().token(BOT_TOKEN).build()
+
+    # Add handlers
+    telegram_app.add_handler(CommandHandler("start", start))
+    telegram_app.add_handler(CommandHandler("subscribe", subscribe))
+    telegram_app.add_handler(CallbackQueryHandler(handle_feedback))
 
     # Initialize and start
-    await app.initialize()
-    await app.start()
-    await app.updater.start_polling()
+    await telegram_app.initialize()
+    await telegram_app.start()
+    await telegram_app.updater.start_polling()
 
     logger.info("Telegram bot started (command handlers active)")
 
-    # Keep running until stopped
-    stop_event = asyncio.Event()
-    await stop_event.wait()
+    # Keep running
+    await asyncio.Event().wait()
 
 
 def send_premium_invite(user_id: str):
-    """
-    Send premium channel invite to Telegram user.
-    Called from webhook after successful subscription.
-    """
-    async def _send():
-        bot = Bot(token=BOT_TOKEN)
-        try:
-            await bot.send_message(
-                chat_id=user_id,
-                text=(
-                    f"🎉 *Welcome to Premium\\!*\n\n"
-                    f"Join the premium channel for spreads and totals alerts:\n"
-                    f"{PREMIUM_INVITE_LINK}"
-                ),
-                parse_mode=ParseMode.MARKDOWN_V2
-            )
-            logger.info(f"✅ Sent premium invite to Telegram user {user_id}")
-        except Exception as e:
-            logger.error(f"Failed to send premium invite to user {user_id}: {e}")
-
-    try:
-        asyncio.run(_send())
-    except Exception as e:
-        logger.error(f"Error in send_premium_invite: {e}")
+    """Send premium channel invite to Telegram user (called from webhook)."""
+    bot = Bot(token=BOT_TOKEN)
+    asyncio.run(bot.send_message(
+        chat_id=user_id,
+        text=f"🎉 **Welcome to Premium!**\n\nJoin the channel: {PREMIUM_INVITE_LINK}",
+        parse_mode=ParseMode.MARKDOWN
+    ))
+    logger.info(f"Sent premium invite to Telegram user {user_id}")
 
 
 def revoke_premium_access(user_id: str):
-    """
-    Remove user from Telegram premium channel.
-    Called from webhook after subscription cancellation.
-    """
-    async def _revoke():
-        bot = Bot(token=BOT_TOKEN)
-        try:
-            # Kick user from premium channel
-            await bot.ban_chat_member(
-                chat_id=PREMIUM_CHANNEL_ID,
-                user_id=int(user_id)
-            )
-
-            # Unban immediately so they can rejoin if they resubscribe
-            await bot.unban_chat_member(
-                chat_id=PREMIUM_CHANNEL_ID,
-                user_id=int(user_id)
-            )
-
-            logger.info(f"✅ Removed user {user_id} from Telegram premium channel")
-
-        except Exception as e:
-            logger.error(f"Failed to revoke Telegram access from user {user_id}: {e}")
-
-    try:
-        asyncio.run(_revoke())
-    except Exception as e:
-        logger.error(f"Error in revoke_premium_access: {e}")
+    """Kick user from premium channel (called from webhook)."""
+    bot = Bot(token=BOT_TOKEN)
+    asyncio.run(bot.ban_chat_member(chat_id=CHANNEL_ID, user_id=int(user_id)))
+    asyncio.run(bot.unban_chat_member(chat_id=CHANNEL_ID, user_id=int(user_id)))
+    logger.info(f"Removed user {user_id} from Telegram channel")

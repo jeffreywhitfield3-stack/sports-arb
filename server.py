@@ -8,14 +8,18 @@ import logging
 import stripe
 from flask import Flask, request, jsonify, render_template_string
 from dotenv import load_dotenv
+from supabase import create_client
 from src.billing import mark_subscribed, cancel_subscription, get_subscription_by_customer
-from src.arb_tracker import get_stats, get_recent_arbs, record_feedback
+from src.arb_tracker import get_stats, get_recent_arbs, record_feedback, search_arbs
 
 load_dotenv()
 
 # Initialize Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+# Initialize Supabase
+supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_ANON_KEY"))
 
 logger = logging.getLogger(__name__)
 
@@ -367,6 +371,155 @@ def stats_dashboard():
     </body>
     </html>
     """, stats=stats, recent_arbs=recent_arbs), 200
+
+
+@app.route("/history", methods=["GET"])
+def history_search():
+    """Historical arb database with search filters."""
+    # Get query parameters
+    sport = request.args.get("sport")
+    book_combo = request.args.get("books")
+    min_margin = request.args.get("min_margin", type=float)
+    max_margin = request.args.get("max_margin", type=float)
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+
+    # Search arbs
+    results = search_arbs(
+        sport=sport,
+        book_combo=book_combo,
+        min_margin=min_margin,
+        max_margin=max_margin,
+        start_date=start_date,
+        end_date=end_date,
+        limit=100
+    )
+
+    # Get unique sports for filter dropdown (simple version)
+    try:
+        all_sports_result = supabase.table("arb_alerts").select("sport,sport_key").execute()
+        unique_sports = list(set((a["sport"], a["sport_key"]) for a in all_sports_result.data))
+    except:
+        unique_sports = []
+
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Arb History</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+            .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+            h1 { color: #2d3748; margin-bottom: 20px; }
+            .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+            label { display: block; margin-bottom: 5px; font-weight: bold; color: #4a5568; }
+            select, input { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+            .buttons { display: flex; gap: 10px; margin-top: 15px; }
+            button { background: #667eea; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+            button:hover { background: #5568d3; }
+            .btn-clear { background: #718096; }
+            .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 25px 0; }
+            .stat-box { background: #f7fafc; padding: 20px; border-radius: 8px; text-align: center; }
+            .stat-value { font-size: 28px; font-weight: bold; color: #667eea; margin-bottom: 5px; }
+            .stat-label { color: #718096; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+            th { background: #f7fafc; font-weight: bold; color: #4a5568; }
+            .no-results { text-align: center; padding: 40px; color: #718096; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>📊 Arbitrage History Search</h1>
+            <form method="get">
+                <div class="filters">
+                    <div>
+                        <label>Sport:</label>
+                        <select name="sport">
+                            <option value="">All Sports</option>
+                            {% for sport_name, sport_key in unique_sports %}
+                            <option value="{{ sport_key }}" {{ 'selected' if sport == sport_key else '' }}>{{ sport_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label>Min Margin %:</label>
+                        <input type="number" step="0.1" name="min_margin" value="{{ min_margin or '' }}" placeholder="e.g., 1.5">
+                    </div>
+                    <div>
+                        <label>Max Margin %:</label>
+                        <input type="number" step="0.1" name="max_margin" value="{{ max_margin or '' }}" placeholder="e.g., 3.0">
+                    </div>
+                    <div>
+                        <label>Start Date:</label>
+                        <input type="date" name="start_date" value="{{ start_date or '' }}">
+                    </div>
+                    <div>
+                        <label>End Date:</label>
+                        <input type="date" name="end_date" value="{{ end_date or '' }}">
+                    </div>
+                </div>
+                <div class="buttons">
+                    <button type="submit">🔍 Search</button>
+                    <button type="button" class="btn-clear" onclick="window.location.href='/history'">Clear Filters</button>
+                </div>
+            </form>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-value">{{ results.stats.count }}</div>
+                    <div class="stat-label">Results Found</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ "%.2f"|format(results.stats.avg_margin) }}%</div>
+                    <div class="stat-label">Avg Margin</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ "%.1f"|format(results.stats.success_rate) }}%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ results.stats.total_feedback }}</div>
+                    <div class="stat-label">User Feedback</div>
+                </div>
+            </div>
+
+            {% if results.arbs %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date/Time</th>
+                        <th>Game</th>
+                        <th>Sport</th>
+                        <th>Margin</th>
+                        <th>Books</th>
+                        <th>Feedback</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for arb in results.arbs %}
+                    <tr>
+                        <td>{{ arb.sent_at[:16].replace('T', ' ') }}</td>
+                        <td><strong>{{ arb.game }}</strong></td>
+                        <td>{{ arb.sport }}</td>
+                        <td>{{ "%.2f"|format(arb.margin_pct) }}%</td>
+                        <td>{{ arb.books|join(', ') }}</td>
+                        <td>👍 {{ arb.feedback_positive }} / 👎 {{ arb.feedback_negative }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="no-results">
+                <p>No results found. Try adjusting your filters or check back later!</p>
+            </div>
+            {% endif %}
+        </div>
+    </body>
+    </html>
+    """, results=results, unique_sports=unique_sports, sport=sport, min_margin=min_margin, max_margin=max_margin, start_date=start_date, end_date=end_date), 200
 
 
 @app.route("/success", methods=["GET"])

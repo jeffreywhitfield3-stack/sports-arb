@@ -208,3 +208,79 @@ def get_recent_arbs(limit: int = 10) -> list:
     except Exception as e:
         logger.error(f"Failed to get recent arbs: {e}")
         return []
+
+
+def search_arbs(
+    sport: Optional[str] = None,
+    book_combo: Optional[str] = None,
+    min_margin: Optional[float] = None,
+    max_margin: Optional[float] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    limit: int = 100
+) -> dict:
+    """
+    Search historical arbs with filters.
+
+    Returns:
+        dict with 'arbs' list and aggregated 'stats'
+    """
+    try:
+        # Start with base query
+        query = supabase.table("arb_alerts").select("*")
+
+        # Apply filters
+        if sport:
+            query = query.eq("sport_key", sport)
+
+        if min_margin is not None:
+            query = query.gte("margin_pct", min_margin)
+
+        if max_margin is not None:
+            query = query.lte("margin_pct", max_margin)
+
+        if start_date:
+            query = query.gte("sent_at", start_date)
+
+        if end_date:
+            query = query.lte("sent_at", end_date)
+
+        # Order and limit
+        query = query.order("sent_at", desc=True).limit(limit)
+
+        result = query.execute()
+        arbs = result.data
+
+        # Filter by book combo if specified
+        if book_combo:
+            book_list = sorted(book_combo.split(" + "))
+            arbs = [
+                arb for arb in arbs
+                if sorted(arb["books"]) == book_list
+            ]
+
+        # Calculate aggregated stats
+        if arbs:
+            total_positive = sum(a.get("feedback_positive", 0) for a in arbs)
+            total_negative = sum(a.get("feedback_negative", 0) for a in arbs)
+            total_feedback = total_positive + total_negative
+
+            stats = {
+                "count": len(arbs),
+                "avg_margin": sum(float(a["margin_pct"]) for a in arbs) / len(arbs),
+                "success_rate": (total_positive / total_feedback * 100) if total_feedback > 0 else 0,
+                "total_feedback": total_feedback,
+            }
+        else:
+            stats = {
+                "count": 0,
+                "avg_margin": 0,
+                "success_rate": 0,
+                "total_feedback": 0,
+            }
+
+        return {"arbs": arbs, "stats": stats}
+
+    except Exception as e:
+        logger.error(f"Failed to search arbs: {e}")
+        return {"arbs": [], "stats": {"count": 0, "avg_margin": 0, "success_rate": 0, "total_feedback": 0}}
