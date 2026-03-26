@@ -8,8 +8,11 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 MIN_MARGIN_PCT = 1.5   # Only alert on arbs ≥ 1.5%
-MAX_MARGIN_PCT = 15.0  # Skip arbs > 15% as likely data errors
+MAX_MARGIN_PCT = 8.0   # Skip arbs > 8% as likely data errors
 BASE_STAKE = 100.0     # Dollar amount for stake split calculation
+
+# Books with known stale lines - skip if ALL legs come from these
+EXCLUDED_BOOKS = {"LowVig.ag", "MyBookie.ag", "BetUS"}
 
 
 @dataclass
@@ -147,6 +150,26 @@ def find_arbs(events: list[dict]) -> list[ArbOpportunity]:
                     "implied_pct": round(o["implied"] * 100, 2),
                     "stake": round(stake, 2),
                 })
+
+            # Filter 1: Skip if ALL books are from excluded list (stale lines)
+            books_used = {leg["book"] for leg in legs}
+            if books_used.issubset(EXCLUDED_BOOKS):
+                logger.warning(
+                    f"SKIPPED (all books excluded): {game} | {market_key} | "
+                    f"margin={margin_pct:.2f}% | books={list(books_used)}"
+                )
+                continue
+
+            # Filter 2: For h2h markets, check for impossible two-positive odds
+            if market_key == "h2h" and len(legs) == 2:
+                odds_leg1 = legs[0]["odds"]
+                odds_leg2 = legs[1]["odds"]
+                if odds_leg1 > 0 and odds_leg2 > 0:
+                    logger.warning(
+                        f"SKIPPED (both odds positive): {game} | {market_key} | "
+                        f"odds={odds_leg1:+d} vs {odds_leg2:+d} (mathematically impossible)"
+                    )
+                    continue
 
             arb = ArbOpportunity(
                 sport=sport_title,
