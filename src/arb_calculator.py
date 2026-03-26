@@ -8,11 +8,36 @@ from dataclasses import dataclass, field
 logger = logging.getLogger(__name__)
 
 MIN_MARGIN_PCT = 1.5   # Only alert on arbs ≥ 1.5%
-MAX_MARGIN_PCT = 8.0   # Skip arbs > 8% as likely data errors
+MAX_MARGIN_PCT = 3.0   # Skip arbs > 3% as likely data errors (tightened from 8%)
 BASE_STAKE = 100.0     # Dollar amount for stake split calculation
+
+# Min/max odds limits to filter out likely data errors
+MIN_AMERICAN_ODDS = -1000  # Skip odds more negative than -1000
+MAX_AMERICAN_ODDS = 1000   # Skip odds more positive than +1000
 
 # Books with known stale lines - skip if ALL legs come from these
 EXCLUDED_BOOKS = {"LowVig.ag", "MyBookie.ag", "BetUS"}
+
+# Trusted tier-1 books - only accept arbs where ALL legs come from these
+# Note: Book names must match exactly as they appear in The Odds API
+# Check logs for actual book names if arbs are being filtered unexpectedly
+TRUSTED_BOOKS = {
+    "DraftKings",
+    "FanDuel",
+    "BetMGM",
+    "Caesars Sportsbook",
+    "PointsBet",
+    "BetRivers",
+    "Unibet",
+    "Bet365",
+    "WynnBET",
+    "Barstool Sportsbook",
+    "FOX Bet",
+    "ESPN BET",
+    "Hard Rock Bet",
+    "Fliff",
+    "Fanatics Sportsbook",
+}
 
 
 @dataclass
@@ -95,6 +120,10 @@ def find_arbs(events: list[dict]) -> list[ArbOpportunity]:
                         name = outcome["name"]
                         price = outcome["price"]
 
+                        # Skip odds outside reasonable range (likely data errors)
+                        if price < MIN_AMERICAN_ODDS or price > MAX_AMERICAN_ODDS:
+                            continue
+
                         # For spreads markets, include point value in outcome key
                         # to distinguish e.g. "Pirates +1.5" from "Pirates -1.5"
                         outcome_key = name
@@ -151,12 +180,13 @@ def find_arbs(events: list[dict]) -> list[ArbOpportunity]:
                     "stake": round(stake, 2),
                 })
 
-            # Filter 1: Skip if ALL books are from excluded list (stale lines)
+            # Filter 1: Require ALL books to be from trusted list (tier-1 only)
             books_used = {leg["book"] for leg in legs}
-            if books_used.issubset(EXCLUDED_BOOKS):
+            untrusted_books = books_used - TRUSTED_BOOKS
+            if untrusted_books:
                 logger.warning(
-                    f"SKIPPED (all books excluded): {game} | {market_key} | "
-                    f"margin={margin_pct:.2f}% | books={list(books_used)}"
+                    f"SKIPPED (untrusted books): {game} | {market_key} | "
+                    f"margin={margin_pct:.2f}% | untrusted={list(untrusted_books)}"
                 )
                 continue
 
