@@ -4,6 +4,7 @@ odds_fetcher.py — Fetches live odds from The Odds API.
 
 import os
 import logging
+import re
 import requests
 from dotenv import load_dotenv
 
@@ -13,6 +14,17 @@ API_KEY = os.getenv("ODDS_API_KEY")
 BASE_URL = "https://api.the-odds-api.com/v4"
 
 logger = logging.getLogger(__name__)
+
+
+def redact_url(url: str) -> str:
+    """
+    Replace apiKey query parameter value with [REDACTED] to prevent
+    API keys from appearing in logs.
+
+    Example:
+        https://api.example.com?apiKey=abc123 -> https://api.example.com?apiKey=[REDACTED]
+    """
+    return re.sub(r'(apiKey=)[^&\s]+', r'\1[REDACTED]', url)
 
 
 def get_active_sports() -> list[dict]:
@@ -89,9 +101,11 @@ def fetch_all_odds() -> tuple[list[dict], dict]:
             all_events.extend(events)
             logger.info(f"Fetched {len(events)} events for {key}")
         except requests.HTTPError as e:
-            logger.warning(f"HTTP error fetching {key}: {e}")
+            error_msg = redact_url(str(e))
+            logger.warning(f"HTTP error fetching {key}: {error_msg}")
         except Exception as e:
-            logger.error(f"Unexpected error fetching {key}: {e}")
+            error_msg = redact_url(str(e))
+            logger.error(f"Unexpected error fetching {key}: {error_msg}")
 
     logger.info(f"Total events fetched: {len(all_events)}")
     return all_events, last_usage
