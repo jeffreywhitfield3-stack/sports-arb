@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = ["python312"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[phases.build]
+# Clear Python cache before running
+cmds = ["find . -type d -name __pycache__ -exec rm -rf {} + || true", "find . -name '*.pyc' -delete || true"]
+
+[start]
+cmd = "python3 main.py"
