@@ -778,12 +778,15 @@ def grant_discord_access(user_id: str):
     Calls Discord API via discord_alerter module.
     """
     import asyncio
-    from src.discord_alerter import grant_premium_access
+    from src.discord_alerter import grant_premium_access, discord_slash_bot
 
     try:
-        # Run the async function in the main event loop
-        # Note: This runs in Flask's sync context, so we use asyncio.run
-        asyncio.run(grant_premium_access(user_id))
+        # Schedule the coroutine on the Discord bot's event loop
+        # The bot is running in a separate thread, so we use run_coroutine_threadsafe
+        loop = discord_slash_bot.loop
+        future = asyncio.run_coroutine_threadsafe(grant_premium_access(user_id), loop)
+        # Wait for it to complete (with timeout)
+        future.result(timeout=10)
         logger.info(f"✅ Discord access granted to user {user_id}")
     except Exception as e:
         logger.error(f"Failed to grant Discord access: {e}")
@@ -795,10 +798,14 @@ def revoke_discord_access(user_id: str):
     Calls Discord API via discord_alerter module.
     """
     import asyncio
-    from src.discord_alerter import revoke_premium_access
+    from src.discord_alerter import revoke_premium_access, discord_slash_bot
 
     try:
-        asyncio.run(revoke_premium_access(user_id))
+        # Schedule the coroutine on the Discord bot's event loop
+        loop = discord_slash_bot.loop
+        future = asyncio.run_coroutine_threadsafe(revoke_premium_access(user_id), loop)
+        # Wait for it to complete (with timeout)
+        future.result(timeout=10)
         logger.info(f"✅ Discord access revoked from user {user_id}")
     except Exception as e:
         logger.error(f"Failed to revoke Discord access: {e}")
