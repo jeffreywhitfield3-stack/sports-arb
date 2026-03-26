@@ -37,6 +37,7 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL_MINUTES = 10
+ENABLE_POLLING = os.getenv("ENABLE_POLLING", "true").lower() == "true"
 
 # Channel IDs for tiered alerts
 FREE_DISCORD_CHANNEL = int(os.getenv("DISCORD_FREE_CHANNEL_ID", os.getenv("DISCORD_CHANNEL_ID", "0")))
@@ -50,6 +51,10 @@ def poll_and_alert():
     Poll The Odds API, detect arbitrage opportunities, and send tiered alerts.
     Free users get h2h only, premium users get all markets.
     """
+    if not ENABLE_POLLING:
+        logger.info("Polling is disabled (ENABLE_POLLING=false)")
+        return
+
     logger.info("=" * 60)
     logger.info("POLL STARTED")
 
@@ -156,7 +161,7 @@ def main():
     """
     logger.info("=" * 60)
     logger.info("Sports Arbitrage Alert System starting up...")
-    logger.info(f"Polling every {POLL_INTERVAL_MINUTES} minutes")
+    logger.info(f"Polling: {'ENABLED' if ENABLE_POLLING else 'DISABLED'} (every {POLL_INTERVAL_MINUTES} minutes)")
     logger.info("=" * 60)
 
     # Initialize database
