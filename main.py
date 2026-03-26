@@ -13,7 +13,9 @@ import time
 import threading
 import asyncio
 import os
+from datetime import datetime
 from dotenv import load_dotenv
+import pytz
 
 # Import logging setup first
 from src.logger_setup import setup_logging
@@ -50,9 +52,24 @@ def poll_and_alert():
     """
     Poll The Odds API, detect arbitrage opportunities, and send tiered alerts.
     Free users get h2h only, premium users get all markets.
+    Only runs between 9 AM and 1 AM Eastern time.
     """
     if not ENABLE_POLLING:
         logger.info("Polling is disabled (ENABLE_POLLING=false)")
+        return
+
+    # Time gate: Only run between 9 AM and 1 AM Eastern
+    eastern = pytz.timezone('US/Eastern')
+    current_time_et = datetime.now(eastern)
+    current_hour = current_time_et.hour
+
+    # Active hours: 9 AM (9) to 1 AM (1)
+    # This means: hour >= 9 OR hour < 1
+    if not (current_hour >= 9 or current_hour < 1):
+        logger.info(
+            f"Outside active hours (9 AM - 1 AM ET), skipping poll. "
+            f"Current time: {current_time_et.strftime('%I:%M %p %Z')}"
+        )
         return
 
     logger.info("=" * 60)
