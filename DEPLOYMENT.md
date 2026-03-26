@@ -50,6 +50,7 @@ git push -u origin main
 - ✅ Install dependencies from `requirements.txt`
 - ✅ Use Python 3.12 (from `.python-version`)
 - ✅ Run `python3 main.py` (from `railway.json`)
+- ✅ Set the `PORT` environment variable (Flask will bind to this port)
 
 ---
 
@@ -90,7 +91,9 @@ STRIPE_CANCEL_URL=https://RAILWAY_DOMAIN_HERE/cancel
 
 4. Click **"Save"**
 
-**Note:** We'll update `STRIPE_WEBHOOK_SECRET` and the URLs in the next steps.
+**Note:**
+- We'll update `STRIPE_WEBHOOK_SECRET` and the URLs in the next steps.
+- You do NOT need to set `PORT` - Railway sets this automatically.
 
 ---
 

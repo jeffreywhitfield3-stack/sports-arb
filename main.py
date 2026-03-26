@@ -14,7 +14,6 @@ import threading
 import asyncio
 import os
 from dotenv import load_dotenv
-from werkzeug.serving import make_server
 
 # Import logging setup first
 from src.logger_setup import setup_logging
@@ -28,7 +27,7 @@ from src.discord_alerter import send_discord_alerts, discord_slash_bot
 from src.telegram_alerter import send_telegram_alerts, telegram_bot_main
 
 # Import Flask webhook server
-from server import app as flask_app
+from server import run_server
 
 # Import billing for database initialization
 from src.billing import init_db
@@ -44,9 +43,6 @@ FREE_DISCORD_CHANNEL = int(os.getenv("DISCORD_FREE_CHANNEL_ID", os.getenv("DISCO
 PREMIUM_DISCORD_CHANNEL = int(os.getenv("DISCORD_PREMIUM_CHANNEL_ID", "0"))
 FREE_TELEGRAM_CHANNEL = os.getenv("TELEGRAM_FREE_CHANNEL_ID", os.getenv("TELEGRAM_CHANNEL_ID"))
 PREMIUM_TELEGRAM_CHANNEL = os.getenv("TELEGRAM_PREMIUM_CHANNEL_ID")
-
-# Global server instance for graceful shutdown
-flask_server = None
 
 
 def poll_and_alert():
@@ -122,13 +118,8 @@ def poll_and_alert():
 
 def run_flask_server():
     """Thread 1: Flask webhook server for Stripe events."""
-    global flask_server
-
-    logger.info("Starting Flask webhook server on port 5000...")
-    flask_server = make_server('0.0.0.0', 5000, flask_app, threaded=True)
-
     try:
-        flask_server.serve_forever()
+        run_server()
     except Exception as e:
         logger.error(f"Flask server error: {e}")
 
@@ -209,15 +200,9 @@ def main():
     except KeyboardInterrupt:
         logger.info("\n" + "=" * 60)
         logger.info("Shutting down gracefully...")
-        logger.info("=" * 60)
-
-        # Shutdown Flask server if running
-        if flask_server:
-            logger.info("Stopping Flask server...")
-            flask_server.shutdown()
-
-        logger.info("All threads will terminate (daemon mode)")
+        logger.info("All daemon threads will terminate")
         logger.info("Goodbye!")
+        logger.info("=" * 60)
 
 
 if __name__ == "__main__":

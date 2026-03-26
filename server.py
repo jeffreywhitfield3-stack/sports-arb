@@ -21,6 +21,65 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 
+@app.route("/", methods=["GET"])
+def index():
+    """Root endpoint - simple status page."""
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Sports Arb Alert System</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+            .container {
+                background: white;
+                border-radius: 20px;
+                padding: 50px 40px;
+                max-width: 500px;
+                text-align: center;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            }
+            .icon { font-size: 80px; margin-bottom: 20px; }
+            h1 { color: #2d3748; font-size: 32px; margin-bottom: 15px; }
+            p { color: #718096; font-size: 18px; line-height: 1.6; margin-bottom: 15px; }
+            .status {
+                display: inline-block;
+                background: #48bb78;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-weight: bold;
+                margin: 20px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="icon">⚡</div>
+            <h1>Sports Arb Alert System</h1>
+            <div class="status">✓ Service Running</div>
+            <p>The arbitrage alert system is running successfully.</p>
+            <p style="margin-top: 25px; font-size: 14px; color: #a0aec0;">
+                Webhook endpoint: /webhook<br>
+                Health check: /health
+            </p>
+        </div>
+    </body>
+    </html>
+    """, 200
+
+
 @app.route("/health", methods=["GET"])
 def health():
     """Health check endpoint for monitoring."""
@@ -337,12 +396,22 @@ def revoke_telegram_access(user_id: str):
         logger.error(f"Failed to revoke Telegram access: {e}")
 
 
+def run_server():
+    """
+    Start Flask server on configured host/port.
+    Reads PORT from environment (Railway sets this dynamically).
+    Can be called from threading or run directly.
+    """
+    host = "0.0.0.0"
+    port = int(os.getenv("PORT", 5000))
+    logger.info(f"Starting Flask webhook server on {host}:{port}...")
+    app.run(host=host, port=port, debug=False)
+
+
 if __name__ == "__main__":
     from src.logger_setup import setup_logging
     from src.billing import init_db
 
     setup_logging()
     init_db()
-
-    logger.info("Starting Flask webhook server on port 5000...")
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    run_server()
