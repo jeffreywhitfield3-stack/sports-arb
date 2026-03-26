@@ -34,6 +34,9 @@ from server import run_server
 # Import billing for database initialization
 from src.billing import init_db
 
+# Import arb tracking for analytics
+from src.arb_tracker import store_arb_alert
+
 load_dotenv()
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -41,11 +44,9 @@ logger = logging.getLogger(__name__)
 POLL_INTERVAL_MINUTES = 10
 ENABLE_POLLING = os.getenv("ENABLE_POLLING", "true").lower() == "true"
 
-# Channel IDs for tiered alerts
-FREE_DISCORD_CHANNEL = int(os.getenv("DISCORD_FREE_CHANNEL_ID", os.getenv("DISCORD_CHANNEL_ID", "0")))
-PREMIUM_DISCORD_CHANNEL = int(os.getenv("DISCORD_PREMIUM_CHANNEL_ID", "0"))
-FREE_TELEGRAM_CHANNEL = os.getenv("TELEGRAM_FREE_CHANNEL_ID", os.getenv("TELEGRAM_CHANNEL_ID"))
-PREMIUM_TELEGRAM_CHANNEL = os.getenv("TELEGRAM_PREMIUM_CHANNEL_ID")
+# Premium-only channels (no free tier)
+PREMIUM_DISCORD_CHANNEL = int(os.getenv("DISCORD_PREMIUM_CHANNEL_ID", os.getenv("DISCORD_CHANNEL_ID", "0")))
+PREMIUM_TELEGRAM_CHANNEL = os.getenv("TELEGRAM_PREMIUM_CHANNEL_ID", os.getenv("TELEGRAM_CHANNEL_ID"))
 
 
 def poll_and_alert():
@@ -98,37 +99,30 @@ def poll_and_alert():
         logger.info("=" * 60)
         return
 
-    logger.info(f"{len(arbs)} arb(s) found — routing to tiered channels...")
+    logger.info(f"{len(arbs)} arb(s) found — sending to premium channels...")
 
-    # 3. Split arbs by market type
-    h2h_arbs = [arb for arb in arbs if arb.market == 'h2h']
-    premium_arbs = [arb for arb in arbs if arb.market in ['spreads', 'totals']]
-
-    # 4. Send h2h alerts to free channels
-    if h2h_arbs:
-        logger.info(f"Sending {len(h2h_arbs)} h2h alert(s) to free channels")
+    # 3. Store arbs in database for tracking and analytics
+    for arb in arbs:
         try:
-            send_discord_alerts(h2h_arbs, channel_id=FREE_DISCORD_CHANNEL)
+            alert_id = store_arb_alert(arb)
+            if alert_id:
+                # Add alert_id to arb object for feedback tracking
+                arb.alert_id = alert_id
         except Exception as e:
-            logger.error(f"Discord free alerts failed: {e}")
+            logger.error(f"Failed to store arb: {e}")
 
-        try:
-            send_telegram_alerts(h2h_arbs, channel_id=FREE_TELEGRAM_CHANNEL)
-        except Exception as e:
-            logger.error(f"Telegram free alerts failed: {e}")
+    # 4. Send ALL arbs to premium channels only (no free tier)
+    logger.info(f"Sending {len(arbs)} alert(s) to premium channels")
 
-    # 5. Send premium alerts to premium channels
-    if premium_arbs:
-        logger.info(f"Sending {len(premium_arbs)} premium alert(s) to premium channels")
-        try:
-            send_discord_alerts(premium_arbs, channel_id=PREMIUM_DISCORD_CHANNEL)
-        except Exception as e:
-            logger.error(f"Discord premium alerts failed: {e}")
+    try:
+        send_discord_alerts(arbs, channel_id=PREMIUM_DISCORD_CHANNEL)
+    except Exception as e:
+        logger.error(f"Discord alerts failed: {e}")
 
-        try:
-            send_telegram_alerts(premium_arbs, channel_id=PREMIUM_TELEGRAM_CHANNEL)
-        except Exception as e:
-            logger.error(f"Telegram premium alerts failed: {e}")
+    try:
+        send_telegram_alerts(arbs, channel_id=PREMIUM_TELEGRAM_CHANNEL)
+    except Exception as e:
+        logger.error(f"Telegram alerts failed: {e}")
 
     logger.info("Alerts sent.")
     logger.info("=" * 60)
