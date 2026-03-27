@@ -27,46 +27,62 @@ def redact_url(url: str) -> str:
     return re.sub(r'(apiKey=)[^&\s]+', r'\1[REDACTED]', url)
 
 
-def get_active_sports() -> list[dict]:
-    """Return active sports from a predefined list of 8 major US sports."""
+def get_active_sports(target_sports: list[str] = None) -> list[dict]:
+    """
+    Return active sports from a target list.
+
+    Args:
+        target_sports: List of sport keys to filter for. If None, uses default set.
+    """
     url = f"{BASE_URL}/sports"
     params = {"apiKey": API_KEY}
     resp = requests.get(url, params=params, timeout=15)
     resp.raise_for_status()
     sports = resp.json()
 
-    # Only track these 8 specific sports
-    target_sports = {
-        "americanfootball_nfl",
-        "americanfootball_ufl",
-        "basketball_nba",
-        "basketball_ncaab",
-        "baseball_mlb",
-        "icehockey_nhl",
-        "mma_mixed_martial_arts",
-        "boxing_boxing",
-    }
+    # Default to all major US sports if not specified
+    if target_sports is None:
+        target_sports = [
+            "americanfootball_nfl",
+            "americanfootball_ufl",
+            "basketball_nba",
+            "basketball_ncaab",
+            "baseball_mlb",
+            "icehockey_nhl",
+            "mma_mixed_martial_arts",
+            "boxing_boxing",
+        ]
+
+    target_set = set(target_sports)
 
     # Filter to only active sports from our target list
     active_sports = [
         s for s in sports
-        if s.get("active") and s.get("key") in target_sports
+        if s.get("active") and s.get("key") in target_set
     ]
 
     logger.info(f"Found {len(active_sports)} active sports from target list")
     return active_sports
 
 
-def get_odds_for_sport(sport_key: str) -> tuple[list[dict], dict]:
+def get_odds_for_sport(sport_key: str, markets: list[str] = None) -> tuple[list[dict], dict]:
     """
-    Fetch h2h, spreads, and totals odds for a given sport key.
+    Fetch odds for a given sport key.
+
+    Args:
+        sport_key: Sport identifier (e.g., "basketball_nba")
+        markets: List of markets to fetch (e.g., ["h2h", "totals"]). Defaults to all.
+
     Returns (odds_data, api_usage_info).
     """
+    if markets is None:
+        markets = ["h2h", "spreads", "totals"]
+
     url = f"{BASE_URL}/sports/{sport_key}/odds"
     params = {
         "apiKey": API_KEY,
         "regions": "us",
-        "markets": "h2h,spreads,totals",
+        "markets": ",".join(markets),
         "oddsFormat": "american",
         "dateFormat": "iso",
     }
@@ -84,19 +100,24 @@ def get_odds_for_sport(sport_key: str) -> tuple[list[dict], dict]:
     return resp.json(), usage
 
 
-def fetch_all_odds() -> tuple[list[dict], dict]:
+def fetch_all_odds(target_sports: list[str] = None, markets: list[str] = None) -> tuple[list[dict], dict]:
     """
-    Fetch odds across all active US sports.
+    Fetch odds across specified sports and markets.
+
+    Args:
+        target_sports: List of sport keys to fetch. Defaults to all major US sports.
+        markets: List of markets to fetch. Defaults to ["h2h", "spreads", "totals"].
+
     Returns (all_events, last_usage_info).
     """
-    sports = get_active_sports()
+    sports = get_active_sports(target_sports)
     all_events = []
     last_usage = {}
 
     for sport in sports:
         key = sport.get("key")
         try:
-            events, usage = get_odds_for_sport(key)
+            events, usage = get_odds_for_sport(key, markets)
             last_usage = usage
             all_events.extend(events)
             logger.info(f"Fetched {len(events)} events for {key}")

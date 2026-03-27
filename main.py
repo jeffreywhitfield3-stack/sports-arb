@@ -20,6 +20,9 @@ import pytz
 # Import logging setup first
 from src.logger_setup import setup_logging
 
+# Import tier configuration
+from src.tier_config import get_current_tier, format_tier_log
+
 # Import polling and arb detection
 from src.odds_fetcher import fetch_all_odds
 from src.arb_calculator import find_arbs
@@ -43,18 +46,8 @@ logger = logging.getLogger(__name__)
 
 # Polling configuration
 ENABLE_POLLING = os.getenv("ENABLE_POLLING", "true").lower() == "true"
-USE_HYBRID_SCHEDULE = os.getenv("USE_HYBRID_SCHEDULE", "false").lower() == "true"
 
-# Simple mode: Fixed interval polling
-POLL_INTERVAL_MINUTES = float(os.getenv("POLL_INTERVAL_MINUTES", "10"))
-
-# Hybrid mode: Time-based dynamic intervals (optimal for 20K API quota)
-PEAK_HOURS_START = 17  # 5 PM ET
-PEAK_HOURS_END = 1     # 1 AM ET (next day)
-PEAK_INTERVAL_MINUTES = 10   # Fast polling during peak hours
-OFFPEAK_INTERVAL_MINUTES = 20  # Slower polling during off-peak
-
-# Track last poll time for hybrid mode
+# Track last poll time for dynamic tier checking
 last_poll_time = None
 
 # Premium channel IDs
@@ -94,13 +87,12 @@ def assign_urgency_level(arb, poll_count: int) -> str:
 
 def poll_and_alert():
     """
-    Poll The Odds API and send arbitrage alerts.
+    Poll The Odds API and send arbitrage alerts using tier-based configuration.
 
-    Two modes:
-    1. Simple: Fixed interval (set via POLL_INTERVAL_MINUTES)
-    2. Hybrid: Dynamic intervals based on time (USE_HYBRID_SCHEDULE=true)
-       - Peak (5 PM-1 AM): 10 min | Off-Peak (9 AM-5 PM): 20 min
-       - Budget: 19,440 calls/month
+    Three tiers optimize API usage based on game schedules:
+    - SLEEP (1 AM - 11 AM ET): Minimal polling, overnight sports only
+    - MID (11 AM - 5 PM ET): Moderate polling, daytime games
+    - PRIME (5 PM - 1 AM ET): Aggressive polling, prime time games
     """
     global last_poll_time, arb_history
 
@@ -108,47 +100,39 @@ def poll_and_alert():
         logger.info("Polling is disabled (ENABLE_POLLING=false)")
         return
 
+    # Get current tier configuration
+    tier = get_current_tier()
+    required_interval_minutes = tier["interval_minutes"]
+
     # Get current time in Eastern timezone
     eastern = pytz.timezone('US/Eastern')
     current_time_et = datetime.now(eastern)
-    current_hour = current_time_et.hour
 
-    # Check if we're in active hours (9 AM - 1 AM ET)
-    if not (current_hour >= 9 or current_hour < 1):
-        logger.info(
-            f"Outside active hours (9 AM - 1 AM ET), skipping poll. "
-            f"Current time: {current_time_et.strftime('%I:%M %p %Z')}"
-        )
-        return
+    # Check if enough time has passed since last poll
+    if last_poll_time is not None:
+        minutes_since_last_poll = (current_time_et - last_poll_time).total_seconds() / 60
+        if minutes_since_last_poll < required_interval_minutes:
+            logger.debug(
+                f"Skipping poll - only {minutes_since_last_poll:.1f} min since last poll "
+                f"(need {required_interval_minutes} min for {tier['name']} tier)"
+            )
+            return
 
-    # HYBRID MODE: Dynamic intervals based on peak/off-peak hours
-    if USE_HYBRID_SCHEDULE:
-        is_peak_hours = (current_hour >= PEAK_HOURS_START or current_hour < PEAK_HOURS_END)
-        required_interval_minutes = PEAK_INTERVAL_MINUTES if is_peak_hours else OFFPEAK_INTERVAL_MINUTES
+    last_poll_time = current_time_et
 
-        # Check if enough time has passed since last poll
-        if last_poll_time is not None:
-            minutes_since_last_poll = (current_time_et - last_poll_time).total_seconds() / 60
-            if minutes_since_last_poll < required_interval_minutes:
-                logger.debug(
-                    f"Skipping poll - only {minutes_since_last_poll:.1f} min since last poll "
-                    f"(need {required_interval_minutes} min in {'peak' if is_peak_hours else 'off-peak'} hours)"
-                )
-                return
-
-        last_poll_time = current_time_et
-        mode = "PEAK" if is_peak_hours else "OFF-PEAK"
-        logger.info(f"🔄 Polling in {mode} mode ({required_interval_minutes}-min interval)")
-    # SIMPLE MODE: Fixed interval (schedule handles timing)
-    else:
-        logger.info(f"🔄 Polling (simple mode, {POLL_INTERVAL_MINUTES}-min interval)")
+    # Log tier info
+    logger.info("🔄 " + tier["reason"])
+    logger.info(format_tier_log(tier))
 
     logger.info("=" * 60)
     logger.info("POLL STARTED")
 
-    # 1. Fetch odds
+    # 1. Fetch odds using tier-specific sports and markets
     try:
-        events, usage = fetch_all_odds()
+        events, usage = fetch_all_odds(
+            target_sports=tier["sports"],
+            markets=tier["markets"]
+        )
         logger.info(
             f"Odds fetch complete. Events: {len(events)} | "
             f"API remaining: {usage.get('requests_remaining', 'N/A')}"
@@ -296,13 +280,8 @@ def main():
     logger.info("=" * 60)
     logger.info("Sports Arbitrage Alert System starting up...")
     logger.info(f"Polling: {'ENABLED' if ENABLE_POLLING else 'DISABLED'}")
-
-    if USE_HYBRID_SCHEDULE:
-        logger.info(f"Mode: HYBRID - Peak (5PM-1AM)={PEAK_INTERVAL_MINUTES}min | Off-Peak (9AM-5PM)={OFFPEAK_INTERVAL_MINUTES}min")
-        logger.info(f"Budget: ~19,440 calls/month (97% of 20K quota)")
-    else:
-        logger.info(f"Mode: SIMPLE - Every {POLL_INTERVAL_MINUTES} minutes")
-
+    logger.info("Mode: TIER-BASED (SLEEP/MID/PRIME)")
+    logger.info("  SLEEP (1AM-11AM): 20min | MID (11AM-5PM): 7min | PRIME (5PM-1AM): 2.5min")
     logger.info("=" * 60)
 
     # Initialize database
@@ -329,19 +308,16 @@ def main():
     logger.info("=" * 60)
     logger.info("All systems ready. Starting polling loop...")
     logger.info("=" * 60)
+    logger.info("All systems ready. Starting tier-based polling loop...")
+    logger.info("=" * 60)
 
-    # Main thread: Run polling scheduler
+    # Main thread: Run polling scheduler with tier-based intervals
     try:
         # Run immediately on startup
         poll_and_alert()
 
-        # Schedule polling based on mode
-        if USE_HYBRID_SCHEDULE:
-            # Hybrid: Check every 5 min, poll_and_alert() decides if it's time
-            schedule.every(5).minutes.do(poll_and_alert)
-        else:
-            # Simple: Use configured interval
-            schedule.every(POLL_INTERVAL_MINUTES).minutes.do(poll_and_alert)
+        # Check every minute if it's time to poll (poll_and_alert handles tier logic)
+        schedule.every(1).minutes.do(poll_and_alert)
 
         # Main loop
         while True:
