@@ -102,7 +102,7 @@ def poll_and_alert():
        - Peak (5 PM-1 AM): 10 min | Off-Peak (9 AM-5 PM): 20 min
        - Budget: 19,440 calls/month
     """
-    global last_poll_time
+    global last_poll_time, arb_history
 
     if not ENABLE_POLLING:
         logger.info("Polling is disabled (ENABLE_POLLING=false)")
@@ -174,7 +174,6 @@ def poll_and_alert():
     logger.info(f"{len(arbs)} raw arb(s) detected")
 
     # 3. Line movement tracking & multi-poll confirmation
-    global arb_history
     current_poll_keys = set()
     confirmed_arbs = []
 
