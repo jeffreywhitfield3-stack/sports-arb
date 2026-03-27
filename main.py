@@ -46,7 +46,7 @@ ENABLE_POLLING = os.getenv("ENABLE_POLLING", "true").lower() == "true"
 USE_HYBRID_SCHEDULE = os.getenv("USE_HYBRID_SCHEDULE", "false").lower() == "true"
 
 # Simple mode: Fixed interval polling
-POLL_INTERVAL_MINUTES = int(os.getenv("POLL_INTERVAL_MINUTES", "10"))
+POLL_INTERVAL_MINUTES = float(os.getenv("POLL_INTERVAL_MINUTES", "10"))
 
 # Hybrid mode: Time-based dynamic intervals (optimal for 20K API quota)
 PEAK_HOURS_START = 17  # 5 PM ET
