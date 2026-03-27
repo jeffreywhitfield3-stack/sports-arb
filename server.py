@@ -113,17 +113,19 @@ def test_alert():
                 {
                     "outcome": "Sample Team A",
                     "book": "DraftKings",
-                    "odds": 150,  # American odds format
+                    "odds": 150,
                     "implied_pct": 40.0,
                     "stake_pct": 45.0,
+                    "stake": 45.00,  # Dollar amount on $100 base
                     "url": "https://sportsbook.draftkings.com"
                 },
                 {
                     "outcome": "Sample Team B",
                     "book": "FanDuel",
-                    "odds": -130,  # American odds format
+                    "odds": -130,
                     "implied_pct": 56.5,
                     "stake_pct": 55.0,
+                    "stake": 55.00,  # Dollar amount on $100 base
                     "url": "https://sportsbook.fanduel.com"
                 }
             ]
