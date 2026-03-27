@@ -37,6 +37,7 @@ TRUSTED_BOOKS = {
     "Hard Rock Bet",
     "Fliff",
     "Fanatics Sportsbook",
+    "Fanatics",  # API returns "Fanatics" instead of "Fanatics Sportsbook"
 }
 
 
