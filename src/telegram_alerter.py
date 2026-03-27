@@ -63,24 +63,32 @@ def build_message(arb: ArbOpportunity) -> str:
     for i, leg in enumerate(arb.legs, 1):
         odds_str = f"+{leg['odds']}" if leg['odds'] > 0 else str(leg['odds'])
         implied_pct_str = escape(f"{leg['implied_pct']}")
-        stake_str = escape(f"${leg['stake']:.2f}")
+        bet_str = escape(f"${leg['stake']:.2f}")
+        book_str = escape(leg['book'])
+
         lines += [
             f"*Leg {i} — {escape(leg['outcome'])}*",
-            f"  📚 Book: `{escape(leg['book'])}`",
-            f"  💰 Odds: `{escape(odds_str)}`",
-            f"  📉 Implied: `{implied_pct_str}%`",
-            f"  💵 Stake \\($100 base\\): `{stake_str}`",
+            f"  💰 Odds: `{escape(odds_str)}` \\({implied_pct_str}% implied\\)",
+            f"  💵 Bet: `{bet_str}` on {book_str}",
             "",
         ]
 
+    # Calculate profit breakdown
+    profit_100 = arb.margin_pct
+    profit_500 = profit_100 * 5
+    profit_1000 = profit_100 * 10
+
     total_implied = sum(l["implied_pct"] for l in arb.legs)
     total_implied_str = escape(f"{total_implied:.2f}")
-    profit_str = escape(f"${arb.margin_pct:.2f}")
     game_time_str = escape(arb.commence_time[:16].replace('T', ' '))
 
     lines += [
-        f"📊 *Total implied:* `{total_implied_str}%`",
-        f"✅ *Profit on $100:* `{profit_str}`",
+        f"📊 *Profit Breakdown:*",
+        f"  `$100` → \\+${escape(f'{profit_100:.2f}')}",
+        f"  `$500` → \\+${escape(f'{profit_500:.2f}')}",
+        f"  `$1,000` → \\+${escape(f'{profit_1000:.2f}')}",
+        "",
+        f"_Total implied: {total_implied_str}%_",
         f"🕐 Game time: `{game_time_str} UTC`",
     ]
 

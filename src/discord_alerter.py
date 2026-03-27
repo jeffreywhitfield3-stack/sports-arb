@@ -138,19 +138,24 @@ def build_embed(arb: ArbOpportunity) -> discord.Embed:
         embed.add_field(
             name=f"📌 {leg['outcome']}",
             value=(
-                f"**Book:** {leg['book']}\n"
-                f"**Odds:** {odds_str}\n"
-                f"**Implied:** {leg['implied_pct']}%\n"
-                f"**Stake (${100:.0f} base):** ${leg['stake']:.2f}"
+                f"**Odds:** {odds_str} ({leg['implied_pct']}% implied)\n"
+                f"**Bet:** ${leg['stake']:.2f} on {leg['book']}"
             ),
             inline=True,
         )
 
+    # Calculate profit breakdown for different bankrolls
+    profit_100 = arb.margin_pct
+    profit_500 = profit_100 * 5
+    profit_1000 = profit_100 * 10
+
     embed.add_field(
-        name="📊 Summary",
+        name="📊 Profit Breakdown",
         value=(
-            f"Total implied: {sum(l['implied_pct'] for l in arb.legs):.2f}%\n"
-            f"Guaranteed profit on $100: **${arb.margin_pct:.2f}**"
+            f"**$100** → +${profit_100:.2f}\n"
+            f"**$500** → +${profit_500:.2f}\n"
+            f"**$1,000** → +${profit_1000:.2f}\n\n"
+            f"_Total implied: {sum(l['implied_pct'] for l in arb.legs):.2f}%_"
         ),
         inline=False,
     )
