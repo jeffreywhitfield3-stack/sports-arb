@@ -106,6 +106,7 @@ def test_alert():
             self.game = "🧪 TEST: Sample Team A vs Sample Team B"
             self.market = "h2h"
             self.margin_pct = 2.5
+            self.emoji = "🏀"  # Required by discord alerter
             self.alert_id = f"TEST_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
             self.legs = [
                 {
