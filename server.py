@@ -91,6 +91,81 @@ def health():
     return jsonify({"status": "healthy"}), 200
 
 
+@app.route("/test", methods=["GET"])
+def test_alert():
+    """Send a test alert to Discord and Telegram channels."""
+    from datetime import datetime
+    from src.discord_alerter import send_discord_alerts
+    from src.telegram_alerter import send_telegram_alerts
+
+    # Create test arb
+    class TestArb:
+        def __init__(self):
+            self.sport = "NBA"
+            self.sport_key = "basketball_nba"
+            self.game = "🧪 TEST: Sample Team A vs Sample Team B"
+            self.market = "h2h"
+            self.margin_pct = 2.5
+            self.alert_id = f"TEST_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+            self.legs = [
+                {
+                    "outcome": "Sample Team A",
+                    "book": "DraftKings",
+                    "price": 150,
+                    "stake_pct": 45.0,
+                    "url": "https://sportsbook.draftkings.com"
+                },
+                {
+                    "outcome": "Sample Team B",
+                    "book": "FanDuel",
+                    "price": -130,
+                    "stake_pct": 55.0,
+                    "url": "https://sportsbook.fanduel.com"
+                }
+            ]
+
+    try:
+        test_arb = TestArb()
+        discord_channel = int(os.getenv("DISCORD_CHANNEL_ID", "0"))
+        telegram_channel = os.getenv("TELEGRAM_CHANNEL_ID")
+
+        results = {"discord": "pending", "telegram": "pending"}
+
+        # Send to Discord
+        if discord_channel:
+            try:
+                send_discord_alerts([test_arb], channel_id=discord_channel)
+                results["discord"] = "✅ sent"
+                logger.info("Test alert sent to Discord")
+            except Exception as e:
+                results["discord"] = f"❌ failed: {str(e)}"
+                logger.error(f"Discord test failed: {e}")
+
+        # Send to Telegram
+        if telegram_channel:
+            try:
+                send_telegram_alerts([test_arb], channel_id=telegram_channel)
+                results["telegram"] = "✅ sent"
+                logger.info("Test alert sent to Telegram")
+            except Exception as e:
+                results["telegram"] = f"❌ failed: {str(e)}"
+                logger.error(f"Telegram test failed: {e}")
+
+        return jsonify({
+            "status": "test_complete",
+            "message": "Test alerts sent! Check your channels.",
+            "results": results,
+            "alert_id": test_arb.alert_id
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Test alert failed: {e}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
 @app.route("/api/stats", methods=["GET"])
 def api_stats():
     """JSON API endpoint for stats - for external integrations."""
