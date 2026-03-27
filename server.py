@@ -106,20 +106,23 @@ def test_alert():
             self.game = "🧪 TEST: Sample Team A vs Sample Team B"
             self.market = "h2h"
             self.margin_pct = 2.5
-            self.emoji = "🏀"  # Required by discord alerter
+            self.emoji = "🏀"
+            self.commence_time = datetime.utcnow().isoformat()
             self.alert_id = f"TEST_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
             self.legs = [
                 {
                     "outcome": "Sample Team A",
                     "book": "DraftKings",
-                    "price": 150,
+                    "odds": 150,  # American odds format
+                    "implied_pct": 40.0,
                     "stake_pct": 45.0,
                     "url": "https://sportsbook.draftkings.com"
                 },
                 {
                     "outcome": "Sample Team B",
                     "book": "FanDuel",
-                    "price": -130,
+                    "odds": -130,  # American odds format
+                    "implied_pct": 56.5,
                     "stake_pct": 55.0,
                     "url": "https://sportsbook.fanduel.com"
                 }
