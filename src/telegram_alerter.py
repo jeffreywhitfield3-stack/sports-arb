@@ -40,8 +40,21 @@ telegram_app = None
 def build_message(arb: ArbOpportunity) -> str:
     """Build Telegram message with MarkdownV2 formatting."""
     market_label = MARKET_LABELS.get(arb.market, arb.market.upper())
+
+    # Add urgency and stability indicators
+    urgency = getattr(arb, 'urgency', '🟡 MEDIUM')
+    poll_count = getattr(arb, 'poll_count', 1)
+
+    if poll_count >= 3:
+        stability = "🟢 STABLE"
+    elif poll_count == 2:
+        stability = "✅ CONFIRMED"
+    else:
+        stability = "⚡ NEW"
+
     lines = [
-        f"{arb.emoji} *ARB ALERT — {escape(f'{arb.margin_pct:.2f}')}% Margin*",
+        f"{urgency} \\| {arb.emoji} *ARB ALERT — {escape(f'{arb.margin_pct:.2f}')}% Margin*",
+        f"{escape(stability)} \\(seen {poll_count}x\\)",
         f"🏟 *{escape(arb.game)}*",
         f"📋 {escape(arb.sport)} · {escape(market_label)}",
         "",

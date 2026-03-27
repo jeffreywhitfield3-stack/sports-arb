@@ -115,9 +115,21 @@ def build_embed(arb: ArbOpportunity) -> discord.Embed:
     market_label = MARKET_LABELS.get(arb.market, arb.market.upper())
     color = COLOR_MAP.get(arb.emoji, 0xAAAAAA)
 
+    # Add urgency indicator to title
+    urgency = getattr(arb, 'urgency', '🟡 MEDIUM')
+    poll_count = getattr(arb, 'poll_count', 1)
+
+    # Build stability indicator
+    if poll_count >= 3:
+        stability = "🟢 STABLE"
+    elif poll_count == 2:
+        stability = "✅ CONFIRMED"
+    else:
+        stability = "⚡ NEW"
+
     embed = discord.Embed(
-        title=f"{arb.emoji} Arb Alert — {arb.margin_pct:.2f}% Margin",
-        description=f"**{arb.game}**\n{arb.sport} · {market_label}",
+        title=f"{urgency} | {arb.emoji} Arb Alert — {arb.margin_pct:.2f}% Margin",
+        description=f"**{arb.game}**\n{arb.sport} · {market_label}\n{stability} (seen {poll_count}x)",
         color=color,
     )
 

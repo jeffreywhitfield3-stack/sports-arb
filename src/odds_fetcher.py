@@ -59,14 +59,14 @@ def get_active_sports() -> list[dict]:
 
 def get_odds_for_sport(sport_key: str) -> tuple[list[dict], dict]:
     """
-    Fetch h2h and spreads odds for a given sport key.
+    Fetch h2h, spreads, and totals odds for a given sport key.
     Returns (odds_data, api_usage_info).
     """
     url = f"{BASE_URL}/sports/{sport_key}/odds"
     params = {
         "apiKey": API_KEY,
         "regions": "us",
-        "markets": "h2h,spreads",
+        "markets": "h2h,spreads,totals",
         "oddsFormat": "american",
         "dateFormat": "iso",
     }

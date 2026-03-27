@@ -61,6 +61,36 @@ last_poll_time = None
 DISCORD_CHANNEL = int(os.getenv("DISCORD_CHANNEL_ID", "0"))
 TELEGRAM_CHANNEL = os.getenv("TELEGRAM_CHANNEL_ID")
 
+# Line movement tracking - stores arbs from recent polls
+arb_history = {}  # {arb_key: {"first_seen": timestamp, "poll_count": N, "arb": ArbOpportunity}}
+REQUIRED_CONFIRMATIONS = 2  # Must appear in 2+ consecutive polls before alerting
+
+
+def generate_arb_key(arb) -> str:
+    """
+    Generate unique key for arb to track across polls.
+    Format: "{game}|{market}|{books_sorted}"
+    """
+    books = "|".join(sorted([leg["book"] for leg in arb.legs]))
+    return f"{arb.game}|{arb.market}|{books}"
+
+
+def assign_urgency_level(arb, poll_count: int) -> str:
+    """
+    Assign urgency level based on stability and margin.
+
+    Returns:
+    - "🔴 HIGH" - Stable (3+ polls), good margin
+    - "🟡 MEDIUM" - Confirmed (2 polls) or lower margin
+    - "⚪ WATCH" - New detection (1 poll)
+    """
+    if poll_count >= 3 and arb.margin_pct >= 2.0:
+        return "🔴 HIGH"
+    elif poll_count >= REQUIRED_CONFIRMATIONS or arb.margin_pct >= 2.0:
+        return "🟡 MEDIUM"
+    else:
+        return "⚪ WATCH"
+
 
 def poll_and_alert():
     """
@@ -137,12 +167,63 @@ def poll_and_alert():
     if not arbs:
         logger.info("No arb opportunities found this poll.")
         logger.info("=" * 60)
+        # Clean up stale arbs from history
+        arb_history.clear()
         return
 
-    logger.info(f"{len(arbs)} arb(s) found — sending to premium channels...")
+    logger.info(f"{len(arbs)} raw arb(s) detected")
 
-    # 3. Store arbs in database for tracking and analytics
+    # 3. Line movement tracking & multi-poll confirmation
+    global arb_history
+    current_poll_keys = set()
+    confirmed_arbs = []
+
     for arb in arbs:
+        arb_key = generate_arb_key(arb)
+        current_poll_keys.add(arb_key)
+
+        if arb_key in arb_history:
+            # Arb seen before - increment poll count
+            arb_history[arb_key]["poll_count"] += 1
+            arb_history[arb_key]["arb"] = arb  # Update with latest data
+        else:
+            # New arb - add to history
+            arb_history[arb_key] = {
+                "first_seen": datetime.now(),
+                "poll_count": 1,
+                "arb": arb
+            }
+
+        poll_count = arb_history[arb_key]["poll_count"]
+
+        # Add tracking metadata to arb
+        arb.poll_count = poll_count
+        arb.urgency = assign_urgency_level(arb, poll_count)
+        arb.first_seen = arb_history[arb_key]["first_seen"]
+
+        # Only send if confirmed (seen in 2+ consecutive polls)
+        if poll_count >= REQUIRED_CONFIRMATIONS:
+            confirmed_arbs.append(arb)
+        else:
+            logger.info(
+                f"PENDING confirmation ({poll_count}/{REQUIRED_CONFIRMATIONS}): "
+                f"{arb.game} | {arb.market} | {arb.margin_pct:.2f}%"
+            )
+
+    # Clean up arbs that didn't appear in this poll (stale)
+    stale_keys = set(arb_history.keys()) - current_poll_keys
+    for key in stale_keys:
+        del arb_history[key]
+
+    if not confirmed_arbs:
+        logger.info(f"No confirmed arbs (all pending confirmation)")
+        logger.info("=" * 60)
+        return
+
+    logger.info(f"{len(confirmed_arbs)} confirmed arb(s) — sending to premium channels...")
+
+    # 4. Store arbs in database for tracking and analytics
+    for arb in confirmed_arbs:
         try:
             alert_id = store_arb_alert(arb)
             if alert_id:
@@ -151,16 +232,16 @@ def poll_and_alert():
         except Exception as e:
             logger.error(f"Failed to store arb: {e}")
 
-    # 4. Send ALL arbs to channels (premium-only service)
-    logger.info(f"Sending {len(arbs)} alert(s) to channels")
+    # 5. Send confirmed arbs to channels (premium-only service)
+    logger.info(f"Sending {len(confirmed_arbs)} alert(s) to channels")
 
     try:
-        send_discord_alerts(arbs, channel_id=DISCORD_CHANNEL)
+        send_discord_alerts(confirmed_arbs, channel_id=DISCORD_CHANNEL)
     except Exception as e:
         logger.error(f"Discord alerts failed: {e}")
 
     try:
-        send_telegram_alerts(arbs, channel_id=TELEGRAM_CHANNEL)
+        send_telegram_alerts(confirmed_arbs, channel_id=TELEGRAM_CHANNEL)
     except Exception as e:
         logger.error(f"Telegram alerts failed: {e}")
 
