@@ -190,19 +190,22 @@ def poll_and_alert():
             arb_history[arb_key] = {
                 "first_seen": datetime.now(),
                 "poll_count": 1,
-                "arb": arb
+                "arb": arb,
+                "alerted": False  # Track if we've already sent alert
             }
 
         poll_count = arb_history[arb_key]["poll_count"]
+        already_alerted = arb_history[arb_key]["alerted"]
 
         # Add tracking metadata to arb
         arb.poll_count = poll_count
         arb.urgency = assign_urgency_level(arb, poll_count)
         arb.first_seen = arb_history[arb_key]["first_seen"]
 
-        # Only send if confirmed (seen in 2+ consecutive polls)
-        if poll_count >= REQUIRED_CONFIRMATIONS:
+        # Only send if confirmed (seen in 2+ consecutive polls) AND not already alerted
+        if poll_count >= REQUIRED_CONFIRMATIONS and not already_alerted:
             confirmed_arbs.append(arb)
+            arb_history[arb_key]["alerted"] = True  # Mark as alerted to prevent duplicates
         else:
             logger.info(
                 f"PENDING confirmation ({poll_count}/{REQUIRED_CONFIRMATIONS}): "
