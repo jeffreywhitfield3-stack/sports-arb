@@ -41,8 +41,21 @@ load_dotenv()
 setup_logging()
 logger = logging.getLogger(__name__)
 
-POLL_INTERVAL_MINUTES = 10
+# Polling configuration
 ENABLE_POLLING = os.getenv("ENABLE_POLLING", "true").lower() == "true"
+USE_HYBRID_SCHEDULE = os.getenv("USE_HYBRID_SCHEDULE", "false").lower() == "true"
+
+# Simple mode: Fixed interval polling
+POLL_INTERVAL_MINUTES = int(os.getenv("POLL_INTERVAL_MINUTES", "10"))
+
+# Hybrid mode: Time-based dynamic intervals (optimal for 20K API quota)
+PEAK_HOURS_START = 17  # 5 PM ET
+PEAK_HOURS_END = 1     # 1 AM ET (next day)
+PEAK_INTERVAL_MINUTES = 10   # Fast polling during peak hours
+OFFPEAK_INTERVAL_MINUTES = 20  # Slower polling during off-peak
+
+# Track last poll time for hybrid mode
+last_poll_time = None
 
 # Premium channel IDs
 DISCORD_CHANNEL = int(os.getenv("DISCORD_CHANNEL_ID", "0"))
@@ -51,27 +64,54 @@ TELEGRAM_CHANNEL = os.getenv("TELEGRAM_CHANNEL_ID")
 
 def poll_and_alert():
     """
-    Poll The Odds API, detect arbitrage opportunities, and send tiered alerts.
-    Free users get h2h only, premium users get all markets.
-    Only runs between 9 AM and 1 AM Eastern time.
+    Poll The Odds API and send arbitrage alerts.
+
+    Two modes:
+    1. Simple: Fixed interval (set via POLL_INTERVAL_MINUTES)
+    2. Hybrid: Dynamic intervals based on time (USE_HYBRID_SCHEDULE=true)
+       - Peak (5 PM-1 AM): 10 min | Off-Peak (9 AM-5 PM): 20 min
+       - Budget: 19,440 calls/month
     """
+    global last_poll_time
+
     if not ENABLE_POLLING:
         logger.info("Polling is disabled (ENABLE_POLLING=false)")
         return
 
-    # Time gate: Only run between 9 AM and 1 AM Eastern
+    # Get current time in Eastern timezone
     eastern = pytz.timezone('US/Eastern')
     current_time_et = datetime.now(eastern)
     current_hour = current_time_et.hour
 
-    # Active hours: 9 AM (9) to 1 AM (1)
-    # This means: hour >= 9 OR hour < 1
+    # Check if we're in active hours (9 AM - 1 AM ET)
     if not (current_hour >= 9 or current_hour < 1):
         logger.info(
             f"Outside active hours (9 AM - 1 AM ET), skipping poll. "
             f"Current time: {current_time_et.strftime('%I:%M %p %Z')}"
         )
         return
+
+    # HYBRID MODE: Dynamic intervals based on peak/off-peak hours
+    if USE_HYBRID_SCHEDULE:
+        is_peak_hours = (current_hour >= PEAK_HOURS_START or current_hour < PEAK_HOURS_END)
+        required_interval_minutes = PEAK_INTERVAL_MINUTES if is_peak_hours else OFFPEAK_INTERVAL_MINUTES
+
+        # Check if enough time has passed since last poll
+        if last_poll_time is not None:
+            minutes_since_last_poll = (current_time_et - last_poll_time).total_seconds() / 60
+            if minutes_since_last_poll < required_interval_minutes:
+                logger.debug(
+                    f"Skipping poll - only {minutes_since_last_poll:.1f} min since last poll "
+                    f"(need {required_interval_minutes} min in {'peak' if is_peak_hours else 'off-peak'} hours)"
+                )
+                return
+
+        last_poll_time = current_time_et
+        mode = "PEAK" if is_peak_hours else "OFF-PEAK"
+        logger.info(f"🔄 Polling in {mode} mode ({required_interval_minutes}-min interval)")
+    # SIMPLE MODE: Fixed interval (schedule handles timing)
+    else:
+        logger.info(f"🔄 Polling (simple mode, {POLL_INTERVAL_MINUTES}-min interval)")
 
     logger.info("=" * 60)
     logger.info("POLL STARTED")
@@ -172,7 +212,14 @@ def main():
     """
     logger.info("=" * 60)
     logger.info("Sports Arbitrage Alert System starting up...")
-    logger.info(f"Polling: {'ENABLED' if ENABLE_POLLING else 'DISABLED'} (every {POLL_INTERVAL_MINUTES} minutes)")
+    logger.info(f"Polling: {'ENABLED' if ENABLE_POLLING else 'DISABLED'}")
+
+    if USE_HYBRID_SCHEDULE:
+        logger.info(f"Mode: HYBRID - Peak (5PM-1AM)={PEAK_INTERVAL_MINUTES}min | Off-Peak (9AM-5PM)={OFFPEAK_INTERVAL_MINUTES}min")
+        logger.info(f"Budget: ~19,440 calls/month (97% of 20K quota)")
+    else:
+        logger.info(f"Mode: SIMPLE - Every {POLL_INTERVAL_MINUTES} minutes")
+
     logger.info("=" * 60)
 
     # Initialize database
@@ -205,8 +252,13 @@ def main():
         # Run immediately on startup
         poll_and_alert()
 
-        # Schedule recurring polls
-        schedule.every(POLL_INTERVAL_MINUTES).minutes.do(poll_and_alert)
+        # Schedule polling based on mode
+        if USE_HYBRID_SCHEDULE:
+            # Hybrid: Check every 5 min, poll_and_alert() decides if it's time
+            schedule.every(5).minutes.do(poll_and_alert)
+        else:
+            # Simple: Use configured interval
+            schedule.every(POLL_INTERVAL_MINUTES).minutes.do(poll_and_alert)
 
         # Main loop
         while True:
