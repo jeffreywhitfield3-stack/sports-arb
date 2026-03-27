@@ -212,6 +212,51 @@ async def telegram_bot_main():
             logger.error(f"Stripe checkout error: {e}")
             await update.message.reply_text("❌ Failed to create checkout. Try again later.")
 
+    async def manage_subscription(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /manage command - opens Stripe Customer Portal."""
+        user_id = update.effective_user.id
+
+        try:
+            from src.billing import supabase
+
+            # Get user's subscription from database
+            result = supabase.table("subscriptions").select("stripe_customer_id").eq(
+                "user_id", str(user_id)
+            ).eq("platform", "telegram").execute()
+
+            if not result.data or not result.data[0].get("stripe_customer_id"):
+                await update.message.reply_text(
+                    "❌ **No Active Subscription**\n\n"
+                    "You don't have an active subscription\\.\n"
+                    "Use /subscribe to get started\\!",
+                    parse_mode=ParseMode.MARKDOWN_V2
+                )
+                return
+
+            customer_id = result.data[0]["stripe_customer_id"]
+
+            # Create Customer Portal session
+            portal_session = stripe.billing_portal.Session.create(
+                customer=customer_id,
+                return_url=STRIPE_SUCCESS_URL,
+            )
+
+            await update.message.reply_text(
+                f"🔗 **Manage Your Subscription**\n\n"
+                f"Click here: {portal_session.url}\n\n"
+                f"You can:\n"
+                f"• Cancel your subscription\n"
+                f"• Update payment method\n"
+                f"• View billing history\n"
+                f"• Download invoices",
+                parse_mode=ParseMode.MARKDOWN
+            )
+            logger.info(f"Customer portal created for Telegram user {user_id}")
+
+        except Exception as e:
+            logger.error(f"Customer portal error: {e}")
+            await update.message.reply_text("❌ Failed to create portal session\\. Try again later\\.", parse_mode=ParseMode.MARKDOWN_V2)
+
     async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command."""
         await update.message.reply_text(
@@ -232,6 +277,7 @@ async def telegram_bot_main():
     # Add handlers
     telegram_app.add_handler(CommandHandler("start", start))
     telegram_app.add_handler(CommandHandler("subscribe", subscribe))
+    telegram_app.add_handler(CommandHandler("manage", manage_subscription))
     telegram_app.add_handler(CallbackQueryHandler(handle_feedback))
 
     # Initialize and start

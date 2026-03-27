@@ -253,6 +253,53 @@ def setup_discord_bot():
                 ephemeral=True
             )
 
+    @bot.tree.command(name="manage", description="Manage your subscription (cancel, update payment)")
+    async def manage_subscription(interaction: discord.Interaction):
+        """Handle /manage command - opens Stripe Customer Portal."""
+        try:
+            from src.billing import supabase
+
+            # Get user's subscription from database
+            result = supabase.table("subscriptions").select("stripe_customer_id").eq(
+                "user_id", str(interaction.user.id)
+            ).eq("platform", "discord").execute()
+
+            if not result.data or not result.data[0].get("stripe_customer_id"):
+                await interaction.response.send_message(
+                    "❌ **No Active Subscription**\n\n"
+                    "You don't have an active subscription.\n"
+                    "Use `/subscribe` to get started!",
+                    ephemeral=True
+                )
+                return
+
+            customer_id = result.data[0]["stripe_customer_id"]
+
+            # Create Customer Portal session
+            portal_session = stripe.billing_portal.Session.create(
+                customer=customer_id,
+                return_url=STRIPE_SUCCESS_URL,
+            )
+
+            await interaction.response.send_message(
+                f"🔗 **Manage Your Subscription**\n\n"
+                f"Click here to manage your subscription: {portal_session.url}\n\n"
+                f"You can:\n"
+                f"• Cancel your subscription\n"
+                f"• Update payment method\n"
+                f"• View billing history\n"
+                f"• Download invoices",
+                ephemeral=True
+            )
+            logger.info(f"Customer portal created for Discord user {interaction.user.id}")
+
+        except Exception as e:
+            logger.error(f"Customer portal error: {e}")
+            await interaction.response.send_message(
+                "❌ Failed to create portal session. Please try again later.",
+                ephemeral=True
+            )
+
     return bot
 
 
