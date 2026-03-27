@@ -97,41 +97,37 @@ def test_alert():
     from datetime import datetime
     from src.discord_alerter import send_discord_alerts
     from src.telegram_alerter import send_telegram_alerts
+    from src.arb_calculator import ArbOpportunity
 
-    # Create test arb
-    class TestArb:
-        def __init__(self):
-            self.sport = "NBA"
-            self.sport_key = "basketball_nba"
-            self.game = "🧪 TEST: Sample Team A vs Sample Team B"
-            self.market = "h2h"
-            self.margin_pct = 2.5
-            self.emoji = "🏀"
-            self.commence_time = datetime.utcnow().isoformat()
-            self.alert_id = f"TEST_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
-            self.legs = [
+    try:
+        # Use the REAL ArbOpportunity dataclass
+        test_arb = ArbOpportunity(
+            sport="NBA",
+            sport_key="basketball_nba",
+            game="🧪 TEST: Sample Team A vs Sample Team B",
+            commence_time=datetime.utcnow().isoformat(),
+            market="h2h",
+            margin_pct=2.5,
+            legs=[
                 {
                     "outcome": "Sample Team A",
                     "book": "DraftKings",
                     "odds": 150,
                     "implied_pct": 40.0,
-                    "stake_pct": 45.0,
-                    "stake": 45.00,  # Dollar amount on $100 base
-                    "url": "https://sportsbook.draftkings.com"
+                    "stake": 45.00,
                 },
                 {
                     "outcome": "Sample Team B",
                     "book": "FanDuel",
                     "odds": -130,
                     "implied_pct": 56.5,
-                    "stake_pct": 55.0,
-                    "stake": 55.00,  # Dollar amount on $100 base
-                    "url": "https://sportsbook.fanduel.com"
+                    "stake": 55.00,
                 }
             ]
+        )
 
-    try:
-        test_arb = TestArb()
+        # Add alert_id for feedback tracking
+        test_arb.alert_id = f"TEST_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
         discord_channel = int(os.getenv("DISCORD_CHANNEL_ID", "0"))
         telegram_channel = os.getenv("TELEGRAM_CHANNEL_ID")
 
